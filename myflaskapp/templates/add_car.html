@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Your First Car</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+
+    <h1>Add Your First Car</h1>
+
+    <form id="add-car-form">
+        <div>
+            <label for="year_purchased">Year Purchased:</label>
+            <select id="year_purchased" name="year_purchased">
+                <!-- Options will be populated by JS -->
+            </select>
+        </div>        
+        <div>
+            <label for="make">Make:</label>
+            <select id="make" name="make">
+                <!-- Options will be populated by JS -->
+            </select>
+        </div>
+        <div>
+            <label for="model">Model:</label>
+            <select id="model" name="model">
+                <!-- Options will be populated by JS -->
+            </select>
+        </div>
+        <div>
+            <label for="rating">Rating:</label>
+            <input type="number" id="rating" name="rating">
+        </div>
+        <div>
+            <label for="memories">Memories:</label>
+            <textarea id="memories" name="memories"></textarea>
+        </div>
+        <button type="submit">Add Car</button>
+    </form>
+    <div id="success-message"></div>
+    <script>
+        $(document).ready(function() {
+            
+        // Populate the "year_purchased" dropdown
+        let startYear = 1945;
+        let endYear = new Date().getFullYear();
+        const yearDropdown = document.getElementById('year_purchased');
+
+        for (let year = startYear; year <= endYear; year++) {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year;
+            yearDropdown.appendChild(option);
+        }
+
+        // Fetch car makes and populate the dropdown
+        fetch('/api/car_makes')
+        .then(response => response.json())
+        .then(data => {
+            // Sort the makes alphabetically
+            data.sort();
+
+            // Get the select dropdown element
+            const selectElement = $('#make');  // Using jQuery here
+            
+            // Add a default "Select Make" option
+            selectElement.append($('<option>').text('Select Make').val(''));
+            
+            // Add each car make as an option
+            data.forEach(make => {
+                selectElement.append($('<option>').text(make).val(make));
+            });
+        });
+
+        // Fetch car models based on selected make
+        $('#make').change(function() {
+            var selectedMake = $(this).val();
+            $.getJSON('/api/car_models/' + selectedMake, function(data) {
+                var modelDropdown = $('#model');
+                modelDropdown.empty();
+                data.forEach(function(model) {
+                    modelDropdown.append($('<option>').text(model.name).val(model.id));
+                });
+            });
+        });
+
+        // Handle form submission
+        $('#add-car-form').submit(function(e) {
+            e.preventDefault();
+            
+            var yearPurchased = $('#year_purchased').val();
+            var modelId = $('#model').val(); // Now using model_id
+            var rating = $('#rating').val();
+            var memories = $('#memories').val();
+            
+            // Log to console
+            console.log("Adding car:", yearPurchased, modelId, rating, memories);
+
+            // Make AJAX POST request to add the car
+            $.ajax({
+                url: '/api/add_car',  // Endpoint where you handle adding a car on the server
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    model_id: modelId,
+                    rating: rating,
+                    memories: memories,
+                    year_purchased: yearPurchased
+                }),
+                success: function(response) {
+                    // Log to the console
+                    console.log("Successfully added car:", response);
+                    
+                    // Show the success message on the HTML page
+                    $('#success-message').html('<p>' + response.message + '</p>');
+                    
+                    // Optional: clear the form fields if you want
+                    $('#rating').val('');
+                    $('#memories').val('');
+                },
+                error: function(error) {
+                    // Log to the console
+                    console.log("Error adding car:", error);
+                    
+                    // Show an error message on the HTML page
+                    $('#success-message').html('<p>Something went wrong. Please try again.</p>');
+                }
+            });
+
+        });
+    });
+    </script>
+
+</body>
+</html>

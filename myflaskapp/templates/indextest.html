@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Cars of My Life</title>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+
+</head>
+<body>
+
+<h1>Cars of My Life</h1>
+
+<div id="myDiv"></div>
+
+    <script>
+        function updateChartWithUserCars(userID) {
+            $.ajax({
+                url: `/api/user_cars/${userID}`,
+                method: 'GET',
+                success: function(response) {
+                    let years = response.map(car => car.year_purchased);
+                    let ratings = response.map(car => car.rating);
+                    
+                    // Assuming you have a chart object already initialized
+                    myChart.data.labels = years;
+                    myChart.data.datasets[0].data = ratings;
+                    myChart.update();
+                },
+                error: function(error) {
+                    console.log("Error fetching user's cars:", error);
+                }
+            });
+        }
+
+     $(document).ready(function() {
+        let userID = 1; // Assume userID is 1 for now
+        updateChartWithUserCars(userID);
+
+        // Random 10 code: Fetch API data and plot
+        fetch('/api/random_cars')
+        .then(response => response.json())
+        .then(data => {
+        let currentTime = 1990;  // Start time
+        const xData = [];
+        const yData = [];
+        const textData = [];
+
+        data.forEach((car, index) => {
+            const makeModel = `${car.make} ${car.model}`;  // Concatenating make and model
+            const rank = car.rating; 
+            currentTime += 3;  // Move ahead by 3 years for the next car
+
+            xData.push(currentTime);
+            yData.push(rank);
+            textData.push(makeModel);
+        });
+
+        const trace = {
+        x: xData,
+        y: yData,
+        text: textData,
+        mode: 'lines+markers+text',
+        type: 'scatter',
+        textposition: 'bottom',
+        marker: {
+            size: 20,  // Increase the size
+            color: 'rgba(75, 192, 192, 0.6)'  // Add some color
+        },
+        line: {
+                shape: 'linear'  // Makes the line linear
+            }
+        };
+
+
+            const layout = {
+            title: 'Car Ratings Over Time',
+            xaxis: {
+                title: 'Time (Years)',
+            },
+            yaxis: {
+                title: 'Rating',
+                range: [0, 10]  // Set the range here
+            }
+            };
+
+
+        Plotly.newPlot('myDiv', [trace], layout);
+    });
+     });
+</script>
+
+</body>
+</html>

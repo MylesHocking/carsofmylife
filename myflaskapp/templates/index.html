@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Cars of My Life</title>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>  <!-- Add jQuery -->
+</head>
+<body>
+
+<h1>Cars of My Life</h1>
+
+<div id="myDiv"></div>
+
+<script>
+  function plotChart(xData, yData, textData, hoverTexts) {
+    const trace = {
+      x: xData,
+      y: yData,
+      text: textData,
+      hoverinfo: 'text+name',
+      hovertext: hoverTexts, 
+      mode: 'lines+markers+text',
+      type: 'scatter',
+      textposition: 'bottom',
+      marker: {
+        size: 50,
+        color: 'rgba(75, 192, 192, 0.6)'
+      },
+      line: {
+        shape: 'linear'
+      }
+    };
+
+    const layout = {
+      title: 'Car Ratings Over Time',
+      xaxis: {
+        title: 'Time (Years)'
+      },
+      yaxis: {
+        title: 'Rating',
+        range: [0, 10]
+      }
+    };
+
+    Plotly.newPlot('myDiv', [trace], layout);
+    return { trace, layout };
+  }
+
+  function updateChartWithUserCars(userID) {
+    $.ajax({
+      url: `/api/user_cars/${userID}`,
+      method: 'GET',
+      success: function(response) {
+        const years = response.map(car => car.year_purchased);
+        const ratings = response.map(car => car.rating);
+        const makeModels = response.map(car => `${car.make} ${car.model}`);
+        const memories = response.map(car => car.memories);
+        const imageUrls = response.map(car => car.image_url);  
+        
+        const hoverTexts = memories.map((memory, index) => {
+            let text = memory;
+            if (imageUrls[index]) {
+            text += `<br><a href='static/images/${imageUrls[index]}' target='_blank'>See Image</a>`;
+            }
+            return text;
+        });
+        
+        const { trace, layout } = plotChart(years, ratings, makeModels, hoverTexts);
+
+        // Inside your updateChartWithUserCars function, after plotting the chart
+        Plotly.newPlot('myDiv', [trace], layout).then(function() {
+        document.getElementById('myDiv').on('plotly_click', function(data) {
+            const pointIndex = data.points[0].pointIndex;
+            const imageUrl = `static/images/${imageUrls[pointIndex]}`;
+            let makeModel = makeModels[pointIndex];
+            let memoriesText = memories[pointIndex];
+            
+            // Create a popup (you'd probably want to make this look nicer)
+            const popup = document.createElement('div');
+            popup.style.position = 'fixed';
+            popup.style.left = '50%';
+            popup.style.top = '50%';
+            popup.style.transform = 'translate(-50%, -50%)';
+            popup.style.backgroundColor = 'white';
+            popup.style.padding = '20px';
+            popup.style.zIndex = '1000';
+            
+            // Add the make and model to the popup
+            const title = document.createElement('h2');
+            title.innerHTML = makeModel;
+            popup.appendChild(title);
+
+            // Add the image to the popup
+            const image = document.createElement('img');
+            image.src = imageUrl;
+            image.style.width = '200px';
+            image.style.height = '200px';
+            popup.appendChild(image);
+            
+            // Add the memories to the popup
+            const memoriesDiv = document.createElement('div');
+            memoriesDiv.innerHTML = memoriesText;
+            popup.appendChild(memoriesDiv);
+
+            // Add a close button to the popup
+            const closeButton = document.createElement('button');
+            closeButton.innerHTML = 'Close';
+            closeButton.onclick = function() {
+            document.body.removeChild(popup);
+            };
+            popup.appendChild(closeButton);
+            
+            // Show the popup
+            document.body.appendChild(popup);
+        });
+        });
+
+      },
+      error: function(error) {
+        console.log("Error fetching user's cars:", error);
+      }
+    });
+  }
+
+  $(document).ready(function() {
+    const userID = 1; // Assume userID is 1 for now
+    updateChartWithUserCars(userID);
+  });
+</script>
+
+</body>
+</html>
