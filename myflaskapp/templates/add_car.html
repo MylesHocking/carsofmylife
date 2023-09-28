@@ -111,7 +111,12 @@
                 success: function(response) {
                     // Log to the console
                     console.log("Successfully added car:", response);
+                    let make = $('#make option:selected').text();
+                    let model = $('#model option:selected').text();
                     
+                    let successMessage = `${make} ${model} ${response.message}, please add next`;
+                    
+                    alert(successMessage);
                     // Show the success message on the HTML page
                     $('#success-message').html('<p>' + response.message + '</p>');
                     
