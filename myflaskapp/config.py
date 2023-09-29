@@ -1,1 +1,3 @@
-SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:J4sp3rw00@localhost/carsofmylife'
+import os
+
+SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'postgresql://postgres:J4sp3rw00@localhost/carsofmylife')

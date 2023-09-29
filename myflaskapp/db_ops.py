@@ -2,15 +2,10 @@ import psycopg2
 from flask_sqlalchemy import SQLAlchemy
 from app import db
 from app.models import Car, UserCarAssociation
-
+from config import SQLALCHEMY_DATABASE_URI
 
 def get_db_conn():
-    return psycopg2.connect(
-        host="localhost",
-        database="carsofmylife",
-        user="postgres",
-        password="J4sp3rw00"
-    )
+    return psycopg2.connect(SQLALCHEMY_DATABASE_URI)
 
 def get_random_cars_from_db():
     conn = get_db_conn()
