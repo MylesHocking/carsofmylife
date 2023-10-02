@@ -7,25 +7,34 @@ from flask import Blueprint, render_template, request, jsonify
 
 
 api = Blueprint('api', __name__)
-
+'''
 #test route fetches 10 randoms cars from db
 @api.route('/random_cars', methods=['GET'])
 def get_random_cars():
     rows = db_ops.get_random_cars_from_db()
     cars = [{"id": row[0], "make": row[1], "model": row[2], "rating": random.randint(1, 10)} for row in rows] 
     return jsonify(cars)
-
+'''
 # Fetch all unique car makes
 @api.route('/car_makes')
 def get_car_makes():
     makes = db.session.query(Car.model_make_id).distinct().all()
+    #sort alphabetically case agnostic
+    makes.sort(key=lambda x: x[0].lower())
+    
     return jsonify([make[0] for make in makes])
 
 # Fetch car models based on make
 @api.route('/car_models/<make>')
 def get_car_models(make):
-    models = db.session.query(Car.model_id, Car.model_name).filter(Car.model_make_id == make).distinct().all()
+    models = db.session.query(Car.model_id, Car.model_name).filter(Car.model_make_id == make).distinct(Car.model_name).all()
     return jsonify([{"id": model[0], "name": model[1]} for model in models])
+
+# Fetch compound of year and car trims based on model name
+@api.route('/car_years_and_trims/<model_name>')
+def get_car_years_and_trims(model_name):
+    years_and_trims = db.session.query(Car.model_year, Car.model_trim, Car.model_id).filter(Car.model_name == model_name).distinct(Car.model_year, Car.model_trim).all()
+    return jsonify([{"year": year_and_trim[0], "trim": year_and_trim[1], "model_id": year_and_trim[2]} for year_and_trim in years_and_trims])
 
 
 @api.route('/add_car', methods=['GET'])
