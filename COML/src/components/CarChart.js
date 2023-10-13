@@ -11,7 +11,6 @@ const CarChart = ({ cars }) => {
 
   const chartWidth = 750;
   const chartHeight = 400;
-  const yAxisLabels = [0, 2, 4, 6, 8, 10];
 
   const [selectedCar, setSelectedCar] = useState(null);
 
@@ -21,6 +20,7 @@ const CarChart = ({ cars }) => {
   };
 
   useEffect(() => {
+    const yAxisLabels = [0, 2, 4, 6, 8, 10];
     if (cars && cars.length > 0) {
       const earliestYear = cars.length ? Math.min(...cars.map(car => car.year_purchased || 0)) : 0;
       const latestYear = cars.length ? Math.max(...cars.map(car => car.year_purchased || 0)) : 0;
