@@ -10,33 +10,23 @@ const AddCar = () => {
       model: '',
       year: '',
       variant: '',
+      rating: '',
+      memories: '',
     });
-    const { Storage } = require('@google-cloud/storage');
-    const storage = new Storage();  // Add your GCP credentials here if needed
+    
     const [imageURL, setImageURL] = useState(null);
 
     const fetchFirstImage = async (modelId) => {
-        const bucketName = 'cars-of-my-life-images';
-        const folderName = `photos/${modelId}/`;
-      
-        // Lists all the files in the folder
-        const [files] = await storage.bucket(bucketName).getFiles({ prefix: folderName });
-        
-        if (files.length === 0) {
-          console.log('No files found.');
-          return;
+        console.log("Fetching first image for model:", modelId);     
+        try {
+            const response = await axios.get(`http://localhost:5000/api/get_first_image/${modelId}`);
+            const imageUrl = response.data.image_url;
+            setImageURL(imageUrl);
+            console.log("Set Image URL:", imageUrl);
+        } catch (error) {
+            console.error('Error fetching first image:', error);
         }
-      
-        // Get the first file name
-        const firstFileName = files[0].name;
-        
-        // Fetch or download the file (this part depends on what you want to do with the image)
-        // For now, let's just log the first file name
-        console.log('First File:', firstFileName);
-        const url = `https://storage.googleapis.com/${bucketName}/${firstFileName}`;
-        setImageURL(url);
-      };
-      
+    };      
 
     const years = Array.from({ length: new Date().getFullYear() - 1944 }, (_, i) => 1945 + i);
 
@@ -100,16 +90,56 @@ const AddCar = () => {
     if (name === 'variant') {
         const variantData = JSON.parse(value);
         const { model_id } = variantData;
+        console.log("Variant Data:", variantData, "Model ID:", model_id);  // Add this line
         if (model_id) {
             await fetchFirstImage(model_id);
         }
     }
+    
   };
+
+  const [successMessage, setSuccessMessage] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Make API call to add car
+    try {
+      // Parsing the variant to get the model_id
+      const variantData = JSON.parse(formData.variant);
+      const { model_id } = variantData;
+      const user_id = localStorage.getItem("user_id");
+      console.log("User ID:", user_id);
+      // Including model_id in the payload
+      const payload = {
+        ...formData,
+        model_id,
+        user_id,
+        year_purchased: formData.year,
+      };
+  
+      console.log("Submitting form data:", payload);
+  
+      const response = await axios.post('http://localhost:5000/api/add_car', payload);
+  
+      if (response.status === 200) {
+        console.log("Successfully added car:", response.data);
+        const successMessage = `${formData.make} ${formData.model} ${response.data.message}, please add next`;
+        setSuccessMessage(successMessage);
+        setFormData({
+            make: '',
+            model: '',
+            year: '',
+            variant: '',
+            rating: '',
+            memories: '',
+        });
+      }
+    } catch (error) {
+      console.error("Error adding car:", error);
+    }
   };
+  
+
+
 
   return (
     <div>
@@ -148,10 +178,11 @@ const AddCar = () => {
                 onChange={handleInputChange}
             >
                 <option value="" disabled>Select Year and Trim</option>
-                {modelVariants.map((variant, index) => (
-                <option key={index} value={variant.model_id}>
+                {modelVariants.map((variant, index) => (                    
+                <option key={index} value={JSON.stringify({ model_id: variant.model_id, year: variant.year, trim: variant.trim })}>
                     {variant.year} {variant.trim ? `- ${variant.trim}` : ''}
                 </option>
+        
                 ))}
             </select>
         </label>
@@ -168,10 +199,33 @@ const AddCar = () => {
             ))}
             </select>
         </label>
+        <label>
+            Rating:
+            <select
+                name="rating"
+                value={formData.rating}
+                onChange={handleInputChange}
+            >
+                <option value="" disabled>Select Rating</option>
+                {Array.from({ length: 10 }, (_, i) => i + 1).map((rating, index) => (
+                <option key={index} value={rating}>{rating}</option>
+                ))}
+            </select>
+        </label>
+        <label>
+            Memories:
+            <textarea
+                name="memories"
+                value={formData.memories}
+                onChange={handleInputChange}
+                placeholder="What are your memories?"                
+            />
+        </label>
 
         <button type="submit">Add Car</button>
       </form>
-      <div className="image-preview">        
+      <div className="image-preview"> 
+        <h3>That Make and Model looked like?</h3>       
             {imageURL && <img src={imageURL} alt="Car" />}
       </div>
       {/* Image upload section */}

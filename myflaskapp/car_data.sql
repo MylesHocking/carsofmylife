@@ -71,3 +71,65 @@ ALTER TABLE public.car_data OWNER TO postgres;
 -- PostgreSQL database dump complete
 --
 
+ALTER TABLE car_images ADD COLUMN web_image_url TEXT;
+ALTER TABLE car_images ADD COLUMN attribution_text TEXT;
+
+select model_id, model_make_id,   model_name ,      model_trim      , model_year , model_body  , model_engine_cc  from car_data LIMIT 20; 
+
+
+SELECT model_id, model_make_id, model_name, model_trim, model_year, model_body, model_engine_cc, COUNT(*)
+FROM car_data
+GROUP BY model_id, model_make_id, model_name, model_trim, model_year, model_body, model_engine_cc
+HAVING COUNT(*) > 1;
+
+
+
+https://www.google.co.uk/search?q=ford+fiesta+xr2&sca_esv=568754602&hl=en&authuser=0&tbm=isch&source=hp&biw=1904&bih=986&sclient=img
+https://www.google.co.uk/search?q=9966+ford+fiesta+xr2&sca_esv=568754602&hl=en&authuser=0&tbm=isch&source=hp&biw=1904&bih=986&sclient=img
+
+
+policies, filters (public demo too)
+new environment for static assets
+
+
+
+[0928/194336.089:INFO:CONSOLE(420)] "%c%s font-size: 18px; Using this console may allow attackers to impersonate you and steal your information using an attack called Self-XSS.
+
+
+
+Host
+ec2-52-215-68-14.eu-west-1.compute.amazonaws.com
+Database
+d5mqaipp88lvin
+User
+fazzudrhahcbsa
+Port
+5432
+Password
+RedactedPassword
+URI
+postgres://fazzudrhahcbsa:503e449ccdc062a8a50b6346ae553191cb50cff68fcbb8e89b49c4b844d04b34@ec2-52-215-68-14.eu-west-1.compute.amazonaws.com:5432/d5mqaipp88lvin
+Heroku CLI
+heroku pg:psql postgresql-graceful-10646 --app carsofmylife
+
+heroku config:set DATABASE_URL=postgres://fazzudrhahcbsa:password@host:port/database
+
+
+git remote set-url origin git@github.com:MylesHocking/carsofmylifescraper1.git
+git remote set-url origin https://github.com/MylesHocking/carsofmylifescraper1.git
+
+cars-of-my-life-images
+
+C:\Users\myles\OneDrive\Documents\GitHub\Google-Image-Scraper\photos
+
+gsutil -m cp -r C:\Users\myles\OneDrive\Documents\GitHub\Google-Image-Scraper\photos gs://cars-of-my-life-images/photos
+
+great, seemed to work, forgot what I'm doing though!,  oh yeah adding a car... the main landing page should have a link to add a car (either your first or an additional one)
+
+
+UPDATE car_data SET model_make_id = INITCAP(model_make_id);
+
+UPDATE car_data SET model_make_id = REPLACE(model_make_id, '-', ' ');
+
+C:\Credentials\dynamic-chiller-392810-e4dc5daacec3.json
+

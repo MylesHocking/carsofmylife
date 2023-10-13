@@ -1,24 +1,31 @@
 body {
   font-family: 'Arial Black', sans-serif;
-}
-body {
-  background: linear-gradient(to bottom, #333, #999);
-  color: #fff;
-}
-
-
-body {
+  color: #000;
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+header {
+  width: 844px;
+  height: 116px;
+  background: linear-gradient( #e55c54, #ae0507);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  justify-content: center;
+}
+
+.chrome-bar {
+  background-color: #A9A9A9;
+  height: 2px;
 }
 
 .navbar {
@@ -26,8 +33,258 @@ code {
   border-bottom: 3px solid #000;
 }
 
+.nav-container {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center; 
+  z-index: 2;
+}
+.nav-container a {
+  color: black;
+  text-decoration: none;
+}
+
+.logo {
+  height:116px; 
+  margin: auto;
+  position: absolute;  
+  top: 0;  
+  left: 0;  
+  right: 0;  
+  bottom: 0;  
+  z-index: 2;  
+}
+
+.chrome-pipe {
+  background-color: #e1e8f2;  /* Your chrome color */
+  height: 20px;
+  position: absolute;  
+  top: 54px;  
+  left: 0;  
+  right: 0;  
+  transform: translateY(-50%);  
+  z-index: 1;  
+  justify-content: space-between;
+  align-items: center; 
+}
+
+.chrome-pipe2 {
+  background-color: #191a1a;  /* Your chrome color */
+  height: 5px;
+  position: absolute;  
+  top: 65px;  
+  left: 0;  
+  right: 0;  
+  transform: translateY(-50%);  
+  z-index: 1;  
+  justify-content: space-between;
+  align-items: center; 
+}
+.user-info {
+  align-self: center;
+  margin-left: auto;
+}
+
+footer {
+  background: linear-gradient( #ae0507, #e55c54);
+  width: 804px;
+  padding-left: 40px;
+  padding-bottom: 40px;
+  padding-top: 40px;
+}
+.footer a {
+  color: black;
+  text-decoration: none;
+}
+
 .card {
   background-color: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.image-preview img {
+  max-width: 642px; /* or whatever width you want */
+  height: auto; /* maintain aspect ratio */
+  object-fit: cover; /* crop if needed */
+}
+
+/* NO CHART*/
+.no-cars-message {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 24px;
+  text-align: center;
+}
+/* CHART */
+
+.chart-container {
+  position: relative;
+  width: 804px;
+  padding-left: 40px;
+  padding-bottom: 40px;
+  padding-top: 40px;
+  background-color: #eee;
+  border: 1px solid #A9A9A9;
+  border-radius: 21px;
+}
+
+.download-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1; 
+}
+
+#chart {
+  position: relative;
+  width: 800px;
+  height: 400px;
+}
+
+.point {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  background-color: transparent;
+  border-radius: 50%;
+  background-size: cover;  /* This will make sure the background image covers the entire element */
+  background-position: center;  /* Center the background image */
+}
+
+.point img {
+  width: 50px;
+  left: 25px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.car-label {
+  position: absolute;
+  line-height: 0.7;
+  text-align: center;
+  font-size: 12px;  
+  font-weight: bold;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 60px;  
+}
+
+.make, .model {
+  line-height: 0.7;
+  display: block;
+}
+
+.grey-placeholder {
+  background-color: grey;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+}
+
+.line-container line {
+  stroke: black;
+  stroke-width: 10;
+  stroke-opacity: 0.3;
+}
+
+.axis {
+  position: absolute;
+  background-color: black;
+}
+
+#x-axis {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 4px;
+  width: 100%;
+}
+
+#y-axis {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+}
+
+.axis-labels {
+  font-size: 14px;
+}
+
+.y-label {
+  left: -20px;
+  position: absolute;
+  line-height: 0.1;
+  text-align: right;
+  width: 15px;
+}
+.x-label {
+  bottom: -20px;
+  position: absolute;
+  text-align: right;
+  width: 50px;
+}
+
+/* MODAL */
+.modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  position: relative;
+  background-color: #fff;
+  padding-left: 20px;
+  width: 80%;
+  max-width: 350px;
+  max-height: 390px;  
+  overflow-y: auto;
+}
+
+.smaller_font {
+  font-size: 8px;
+}
+
+.close {
+  position: absolute;
+  right: 10px;
+  top: 5px;
+  font-size: 28px;
+  cursor: pointer;
+}
+
+.modal-content img {
+  width: 300px;
+  height: auto;
+}
+
+/* LANDING PAGE */
+
+.landing-page-container {
+  text-align: center;
+  margin-top: 50px;
+}
+
+.get-started-button {
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
 }
