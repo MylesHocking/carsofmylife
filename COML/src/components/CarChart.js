@@ -74,7 +74,7 @@ const CarChart = ({ cars }) => {
     
       fetchImages();
     }
-  }, [cars]);
+  }, [cars, yAxisLabels]);
 
   const downloadChart = () => {
     const chartElement = document.getElementsByClassName('chart-container')[0];

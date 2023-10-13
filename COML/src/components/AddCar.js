@@ -224,6 +224,8 @@ const AddCar = () => {
 
         <button type="submit">Add Car</button>
       </form>
+      {successMessage && <p>{successMessage}</p>}
+      {/* Image preview section */}
       <div className="image-preview"> 
         <h3>That Make and Model looked like?</h3>       
             {imageURL && <img src={imageURL} alt="Car" />}
