@@ -1,4 +1,4 @@
-# start it all off
+# start it all off = WOOHOO!
 from app import create_app
 
 app = create_app()
