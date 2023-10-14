@@ -1,5 +1,5 @@
 import pandas as pd
-from app import db, app
+from app.app import db, app
 
 # Path to the CSV file
 csv_file_path = 'data/CQA_Premium.csv'

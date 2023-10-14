@@ -1,4 +1,4 @@
-from app import db
+from app.app import db
 
 class UserCarAssociation(db.Model):
     __tablename__ = 'user_car_association'

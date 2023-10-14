@@ -2,7 +2,7 @@
 import sys
 print("DebugPython PATH:", sys.path)
 
-from app import create_app
+from app.app import create_app
 
 app = create_app()
 

@@ -1,4 +1,4 @@
-from app import db
+from app.app import db
 
 class GeneralCarImage(db.Model):
     __tablename__ = 'general_car_images'

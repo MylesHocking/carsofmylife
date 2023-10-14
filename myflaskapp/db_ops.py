@@ -1,6 +1,6 @@
 import psycopg2
 from flask_sqlalchemy import SQLAlchemy
-from app import db
+from app.app import db
 from app.models import Car, UserCarAssociation
 from config import SQLALCHEMY_DATABASE_URI
 
