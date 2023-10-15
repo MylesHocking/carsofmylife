@@ -2,6 +2,7 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
+from config import ALLOWED_ORIGINS
 
 
 # Initialize SQLAlchemy with no settings
@@ -11,7 +12,7 @@ def create_app():
     app = Flask(__name__, template_folder='../templates', static_folder='../static')
     app.config.from_object('config')
 
-    CORS(app, origins=["http://localhost:3000"])
+    CORS(app, origins=[ALLOWED_ORIGINS])
 
     # Initialize SQLAlchemy
     db.init_app(app)

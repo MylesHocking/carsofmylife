@@ -5,11 +5,13 @@ import { useNavigate } from 'react-router-dom';
 
 function App() {
   const navigate = useNavigate();
+  const apiUrl = process.env.REACT_APP_FLASK_API_URL;
+  const oauthRedirectUri = process.env.REACT_APP_OAUTH_REDIRECT_URI;
   
   return (
     <GoogleOAuthProvider
       clientId="1003699094925-sv0et1mp81ln28l24tccaosr60sbmuca.apps.googleusercontent.com"
-      redirectUri="http://localhost:3000"
+      redirectUri={oauthRedirectUri}
     >
       <GoogleLogin
         onSuccess={credentialResponse => {
@@ -17,7 +19,7 @@ function App() {
           const { credential } = credentialResponse;
           // Save the Google ID token in the local state or local storage.
           localStorage.setItem("googleToken", credential);
-          axios.post('http://localhost:5000/api/verify_google_token', {
+          axios.post(`${apiUrl}/api/verify_google_token`, {
             token: credentialResponse.credential
           })
           .then(response => {

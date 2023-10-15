@@ -3,7 +3,8 @@ import '../index.css';
 import axios from 'axios';
 import html2canvas from 'html2canvas';
 
-const CarChart = ({ cars }) => {
+const CarChart = ({ cars }) => {  
+  const apiUrl = process.env.REACT_APP_FLASK_API_URL;
   console.log("Cars in CarChart:", cars);
   const [points, setPoints] = useState([]);
   const [xLabels, setXLabels] = useState([]);
@@ -54,7 +55,7 @@ const CarChart = ({ cars }) => {
           let imageUrl = null;
     
           try {
-            const response = await axios.get(`http://localhost:5000/api/get_first_image/${car.model_id}`);
+            const response = await axios.get(`${apiUrl}/api/get_first_image/${car.model_id}`);
             imageUrl = response.data.image_url; // assuming the URL comes in response.data
           } catch (error) {
             if (error.response && error.response.status === 404) {

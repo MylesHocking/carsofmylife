@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const AddCar = () => {
+    const apiUrl = process.env.REACT_APP_FLASK_API_URL;
+    console.log("API URL:", apiUrl);
     const [makes, setMakes] = useState([]);
     const [models, setModels] = useState([]);
     const [modelVariants, setModelVariants] = useState([]);
@@ -19,7 +21,9 @@ const AddCar = () => {
     const fetchFirstImage = async (modelId) => {
         console.log("Fetching first image for model:", modelId);     
         try {
-            const response = await axios.get(`http://localhost:5000/api/get_first_image/${modelId}`);
+            console.log(`API URL for fetching first image: ${apiUrl}/api/get_first_image/${modelId}`);
+
+            const response = await axios.get(`${apiUrl}/api/get_first_image/${modelId}`);          
             const imageUrl = response.data.image_url;
             setImageURL(imageUrl);
             console.log("Set Image URL:", imageUrl);
@@ -34,7 +38,7 @@ const AddCar = () => {
     useEffect(() => {
       const fetchMakes = async () => {
         try {
-          const response = await axios.get('http://localhost:5000/api/car_makes');     
+          const response = await axios.get(`${apiUrl}/api/car_makes`);     
           setMakes(response.data);
         } catch (error) {
           console.error('Error fetching makes:', error);
@@ -50,7 +54,7 @@ const AddCar = () => {
         if (formData.make) {
             try {
             // Use the correct API endpoint for fetching models
-            const response = await axios.get(`http://localhost:5000/api/car_models/${formData.make}`);
+            const response = await axios.get(`${apiUrl}/api/car_models/${formData.make}`);
             setModels(response.data);
             } catch (error) {
             console.error('Error fetching models:', error);
@@ -65,8 +69,8 @@ const AddCar = () => {
         if (formData.model) {
           const fetchModelVariants = async () => {
             try {
-              const response = await axios.get(`http://localhost:5000/api/car_years_and_trims/${formData.model}`);
-              console.log("URL:", `http://localhost:5000/api/car_years_and_trims/${formData.model}`);
+              const response = await axios.get(`${apiUrl}/api/car_years_and_trims/${formData.model}`);
+              console.log("URL:", `${apiUrl}/api/car_years_and_trims/${formData.model}`);
               setModelVariants(response.data);
               console.log("Model Variants:", response.data);
             } catch (error) {
@@ -118,7 +122,7 @@ const AddCar = () => {
   
       console.log("Submitting form data:", payload);
   
-      const response = await axios.post('http://localhost:5000/api/add_car', payload);
+      const response = await axios.post(`${apiUrl}/api/add_car`, payload);
   
       if (response.status === 200) {
         console.log("Successfully added car:", response.data);
