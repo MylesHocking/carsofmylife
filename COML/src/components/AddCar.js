@@ -46,7 +46,7 @@ const AddCar = () => {
       };
   
       fetchMakes();
-    }, []);
+    }, [apiUrl]);
   
     // Load models whenever a make is selected
     useEffect(() => {
@@ -62,7 +62,7 @@ const AddCar = () => {
         }
     };
     fetchModels();
-  }, [formData.make]);
+  }, [formData.make, apiUrl]);
   
       // Load model variants whenever a model is selected
       useEffect(() => {
@@ -80,7 +80,7 @@ const AddCar = () => {
         
           fetchModelVariants();
         }
-      }, [formData.model]);
+      }, [formData.model, apiUrl]);
       
 
   const handleInputChange = async (e) => {

@@ -75,7 +75,7 @@ const CarChart = ({ cars }) => {
     
       fetchImages();
     }
-  }, [cars]);
+  }, [cars, apiUrl]);
 
   const downloadChart = () => {
     const chartElement = document.getElementsByClassName('chart-container')[0];
