@@ -1,1 +1,1 @@
-web: gunicorn myflaskapp.run:app
+web: gunicorn run:app
