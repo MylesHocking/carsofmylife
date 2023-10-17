@@ -2,7 +2,7 @@ import psycopg2
 from flask_sqlalchemy import SQLAlchemy
 from app.app import db
 from app.models import Car, UserCarAssociation
-from config import SQLALCHEMY_DATABASE_URI
+from app.config import SQLALCHEMY_DATABASE_URI
 
 def get_db_conn():
     return psycopg2.connect(SQLALCHEMY_DATABASE_URI)

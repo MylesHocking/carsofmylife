@@ -1,10 +1,11 @@
 # start it all off = WOOHOO!
 import sys
 import os
-#print("Current Working Directory:", os.getcwd())
-#print("DebugPython PATH:", sys.path)
+print("Current Working Directory:", os.getcwd())
+print("DebugPython PATH:", sys.path)
 
-from app.app import create_app, db
+from app.app import create_app
+from app.app import db
 
 app = create_app()
 
