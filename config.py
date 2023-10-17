@@ -1,7 +1,10 @@
 import os
 
-#SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'postgresql://postgres:J4sp3rw00@localhost/carsofmylife')
-SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL').replace("postgres://", "postgresql://", 1)
+SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
+if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith("postgres://"):
+    SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("postgres://", "postgresql://", 1)
+else:
+    SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:J4sp3rw00@localhost/carsofmylife'
 
 GCP_CREDENTIALS_JSON_STRING = os.environ.get('GCP_CREDENTIALS_JSON_STRING', '''{
   "type": "service_account",
