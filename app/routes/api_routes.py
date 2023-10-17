@@ -1,23 +1,16 @@
 from flask import Blueprint, jsonify
 from app.app import db  
 from app.models import Car, UserCarAssociation, CarImage, User
-import random
 import db_ops
 from flask import Blueprint, render_template, request, jsonify
 from google.cloud import storage
 import datetime 
 import requests
-
+import json
+import os
 
 api = Blueprint('api', __name__)
-'''
-#test route fetches 10 randoms cars from db
-@api.route('/random_cars', methods=['GET'])
-def get_random_cars():
-    rows = db_ops.get_random_cars_from_db()
-    cars = [{"id": row[0], "make": row[1], "model": row[2], "rating": random.randint(1, 10)} for row in rows] 
-    return jsonify(cars)
-'''
+
 # Fetch all unique car makes
 @api.route('/car_makes')
 def get_car_makes():
@@ -81,7 +74,9 @@ def get_user_cars(user_id):
     ]
     return jsonify(cars_data)
 
-storage_client = storage.Client()
+
+creds_json = json.loads(os.environ.get("GCP_CREDENTIALS_JSON_STRING"))
+storage_client = storage.Client.from_service_account_info(creds_json)
 @api.route('/get_first_image/<model_id>', methods=['GET'])
 def get_first_image(model_id):
     bucket_name = 'cars-of-my-life-images'
