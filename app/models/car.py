@@ -1,4 +1,4 @@
-from app.app import db
+from app import db
 
 class Car(db.Model):
     __tablename__ = 'car_data'
@@ -41,4 +41,4 @@ class Car(db.Model):
     model_co2 = db.Column(db.Float)
     model_make_display = db.Column(db.Text)
     users = db.relationship("UserCarAssociation", back_populates="car")
-    general_images = db.relationship("GeneralCarImage", back_populates="car_data")
+ 

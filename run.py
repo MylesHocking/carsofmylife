@@ -4,10 +4,10 @@ import os
 #print("Current Working Directory:", os.getcwd())
 #print("DebugPython PATH:", sys.path)
 
-from app.app import create_app
-from app.app import db
+from app import create_app
+from app import db
 
 app = create_app()
 
 if __name__ == '__main__':
-    app.run(debug=False)
+    app.run(debug=True)

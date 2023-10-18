@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify
-from app.app import db  
+from app import db  
 from app.models import Car, UserCarAssociation, CarImage, User
 import db_ops
 from flask import Blueprint, render_template, request, jsonify
