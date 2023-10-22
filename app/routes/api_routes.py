@@ -81,13 +81,26 @@ if GCP_CREDENTIALS_JSON_STRING:
     storage_client = storage.Client.from_service_account_info(creds_json)
 else:
     storage_client = storage.Client()
-@api.route('/get_first_image/<model_id>', methods=['GET'])
-def get_first_image(model_id):
+
+@api.route('/get_first_thumb/<model_id>', methods=['GET'])
+def get_first_thumb(model_id):
+    return get_first_image_type('thumbs', model_id)
+
+
+@api.route('/get_first_photo/<model_id>', methods=['GET'])
+def get_first_photo(model_id):
+    return get_first_image_type('photos', model_id)
+
+def get_first_image_type(image_type, model_id):
     bucket_name = 'cars-of-my-life-images'
-    folder_name = f'photos/{model_id}/'
+    folder_name = f'{image_type}/{model_id}/'
+    print(f"Searching in folder: {folder_name}")  # Print the folder name you are searching in
 
     bucket = storage_client.get_bucket(bucket_name)
-    blobs = bucket.list_blobs(prefix=folder_name)
+    blobs = list(bucket.list_blobs(prefix=folder_name))  # Convert iterator to list
+    
+    blob_names = [blob.name for blob in blobs]
+    print(f"Blobs found: {blob_names}")  # Print the names of blobs retrieved
 
     for blob in blobs:
         if blob.name != folder_name:  # Skip the folder itself
@@ -100,6 +113,7 @@ def get_first_image(model_id):
             return jsonify({"image_url": url})
 
     return jsonify({"error": "No images found"}), 200
+
 
 @api.route('/verify_google_token', methods=['POST'])
 def verify_google_token():
