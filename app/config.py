@@ -21,3 +21,5 @@ GCP_CREDENTIALS_JSON_STRING = os.environ.get('GCP_CREDENTIALS_JSON_STRING', '''{
 }''')
 
 ALLOWED_ORIGINS = os.environ.get('ALLOWED_ORIGINS', 'http://localhost:3000')
+
+UPLOAD_FOLDER = 'user_images'

@@ -16,14 +16,19 @@ def get_random_cars_from_db():
     conn.close()
     return rows
 
-def add_car_to_db(model_id, rating, memories, user_id, year_purchased):
+def add_car_to_db(model_id, rating, memories, user_id, year_purchased, has_custom_image=False):
     new_association = UserCarAssociation(
         user_id=user_id,
         model_id=model_id,
         rating=rating,
         memories=memories,
-        year_purchased=year_purchased
+        year_purchased=year_purchased,
+        has_custom_image=has_custom_image  # Set the new flag here
     )
 
     db.session.add(new_association)
     db.session.commit()
+
+    # Return the ID of the newly created association
+    return new_association.id
+

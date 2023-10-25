@@ -1,15 +1,24 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, render_template, request
 from app import db  
 from app.models import Car, UserCarAssociation, CarImage, User
 import db_ops
-from flask import Blueprint, render_template, request, jsonify
 from google.cloud import storage
 import datetime 
 import requests
 import json
 import os
+from werkzeug.utils import secure_filename
+from app.utils.image_utils import create_thumbnail
+from app.utils.gcp_utils import storage_client
 
 api = Blueprint('api', __name__)
+
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+GCP_BUCKET_NAME = 'cars-of-my-life-images'
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # Fetch all unique car makes
 @api.route('/car_makes')
@@ -40,15 +49,33 @@ def add_car_page():
 @api.route('/add_car', methods=['POST'])
 def add_car():
     # Your code to handle the form submission goes here
-    data = request.json
+    data = request.form
+    file = request.files.get('file', None)
     model_id = int(data.get('model_id'))  # Convert to integer
     rating = int(data.get('rating'))
     memories = data['memories']
     year_purchased = data.get('year_purchased')
     user_id = data.get('user_id')
     print('user_id is:' + str(user_id))
-    db_ops.add_car_to_db(model_id, rating, memories, user_id, year_purchased)
 
+    # Check if an image was uploaded
+    has_custom_image = file and file.filename.split('.')[-1] in ALLOWED_EXTENSIONS
+
+    new_car_id = db_ops.add_car_to_db(model_id, rating, memories, user_id, year_purchased, has_custom_image)
+    # Check if a custom image has been uploaded
+    if has_custom_image:
+        # Now you can use new_car_id to upload the image to GCP
+        folder_path = f"user_images/{new_car_id}/"
+        thumbnail_folder_path = f"user_images/{new_car_id}/thumb/"
+
+        # Upload main image
+        blob = storage.Blob(folder_path + file.filename, bucket=storage_client.bucket(GCP_BUCKET_NAME))
+        blob.upload_from_file(file)
+        # Reset the file pointer to the beginning so that it can be read again
+        file.seek(0)
+        # Create a thumbnail
+        create_thumbnail(file, thumbnail_folder_path + file.filename, GCP_BUCKET_NAME)
+    
     return jsonify({"message": "Car added successfully"})
 
 @api.route('/user_cars/<int:user_id>', methods=['GET'])
@@ -69,34 +96,36 @@ def get_user_cars(user_id):
             'rating': car.UserCarAssociation.rating,
             'memories': car.UserCarAssociation.memories,
             'year_purchased': car.UserCarAssociation.year_purchased,
-            'image_url': car.CarImage.image_url if car.CarImage else None
+            'image_url': car.CarImage.image_url if car.CarImage else None,
+            'has_custom_image': car.UserCarAssociation.has_custom_image,  
+            'user_car_association_id': car.UserCarAssociation.id 
         } for car in user_cars
     ]
     return jsonify(cars_data)
 
 
-GCP_CREDENTIALS_JSON_STRING = os.environ.get("GCP_CREDENTIALS_JSON_STRING")
-if GCP_CREDENTIALS_JSON_STRING:
-    creds_json = json.loads(GCP_CREDENTIALS_JSON_STRING)
-    storage_client = storage.Client.from_service_account_info(creds_json)
-else:
-    storage_client = storage.Client()
 
 @api.route('/get_first_thumb/<model_id>', methods=['GET'])
 def get_first_thumb(model_id):
     return get_first_image_type('thumbs', model_id)
 
+@api.route('/get_custom_thumb/<user_car_association_id>', methods=['GET'])
+def get_custom_thumb(user_car_association_id):
+    return get_first_image_type(f'user_images/{user_car_association_id}/thumb')
 
 @api.route('/get_first_photo/<model_id>', methods=['GET'])
 def get_first_photo(model_id):
     return get_first_image_type('photos', model_id)
 
-def get_first_image_type(image_type, model_id):
-    bucket_name = 'cars-of-my-life-images'
-    folder_name = f'{image_type}/{model_id}/'
+@api.route('/get_custom_photo/<user_car_association_id>', methods=['GET'])
+def get_custom_photo(user_car_association_id):
+    return get_first_image_type(f'user_images/{user_car_association_id}')
+
+def get_first_image_type(image_type, model_id=None):
+    folder_name = f'{image_type}/{model_id}/' if model_id else f'{image_type}/'
     print(f"Searching in folder: {folder_name}")  # Print the folder name you are searching in
 
-    bucket = storage_client.get_bucket(bucket_name)
+    bucket = storage_client.get_bucket(GCP_BUCKET_NAME)
     blobs = list(bucket.list_blobs(prefix=folder_name))  # Convert iterator to list
     
     blob_names = [blob.name for blob in blobs]

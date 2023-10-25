@@ -8,6 +8,7 @@ class UserCarAssociation(db.Model):
     rating = db.Column(db.Integer)
     memories = db.Column(db.Text)
     year_purchased = db.Column(db.Integer)
+    has_custom_image = db.Column(db.Boolean, default=False)
 
     user = db.relationship("User", back_populates="cars")
     car = db.relationship("Car", back_populates="users")
