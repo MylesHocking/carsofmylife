@@ -174,7 +174,10 @@ def verify_google_token():
                 google_id=google_id, 
                 is_google_account=True,
                 email=token_info.get('email', ''),
-                # ... populate more fields if needed
+                username=token_info.get('email', ''),
+                # get first name and last name
+                firstname=token_info.get('given_name', ''),
+                lastname=token_info.get('family_name', ''),                                
             )
             db.session.add(user)
             db.session.commit()
