@@ -10,6 +10,7 @@ class User(db.Model):
     lastname = db.Column(db.String(50), unique=False, nullable=False)    
     email = db.Column(db.String(100), unique=False, nullable=False)
     password_hash = db.Column(db.String(128), nullable=True)
+    happy2show = db.Column(db.Boolean, nullable=False, default=True)
     cars = db.relationship("UserCarAssociation", back_populates="user")
     
     def to_dict(self):
