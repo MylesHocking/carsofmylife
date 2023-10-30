@@ -9,7 +9,7 @@ class User(db.Model):
     firstname = db.Column(db.String(50), nullable=False)
     lastname = db.Column(db.String(50), unique=False, nullable=False)    
     email = db.Column(db.String(100), unique=False, nullable=False)
-    password_hash = db.Column(db.String(128), nullable=False)
+    password_hash = db.Column(db.String(128), nullable=True)
     cars = db.relationship("UserCarAssociation", back_populates="user")
     
     def to_dict(self):

@@ -24,7 +24,7 @@ def upgrade():
                nullable=True)
         batch_op.alter_column('password_hash',
                existing_type=sa.VARCHAR(length=128),
-               nullable=False)
+               nullable=True)
         batch_op.drop_constraint('users_username_key', type_='unique')
 
     # ### end Alembic commands ###
@@ -36,7 +36,7 @@ def downgrade():
         batch_op.create_unique_constraint('users_username_key', ['username'])
         batch_op.alter_column('password_hash',
                existing_type=sa.VARCHAR(length=128),
-               nullable=True)
+               nullable=False)
         batch_op.alter_column('username',
                existing_type=sa.VARCHAR(length=50),
                nullable=False)
