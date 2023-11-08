@@ -23,3 +23,6 @@ GCP_CREDENTIALS_JSON_STRING = os.environ.get('GCP_CREDENTIALS_JSON_STRING', '''{
 ALLOWED_ORIGINS = os.environ.get('ALLOWED_ORIGINS', 'http://localhost:3000')
 
 UPLOAD_FOLDER = 'user_images'
+
+MAILGUN_DOMAIN = 'mg.carsofmy.life'
+MAILGUN_API_KEY = 'e64d5e0d1edce6268292e80779b962f9-8c9e82ec-82cfabe6'

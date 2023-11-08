@@ -6,6 +6,7 @@ class Car(db.Model):
     model_id = db.Column(db.BigInteger, primary_key=True)
     model_make_id = db.Column(db.Text)
     model_name = db.Column(db.Text)
+    is_generic_model = db.Column(db.Boolean, default=False)
     model_trim = db.Column(db.Text)
     model_year = db.Column(db.BigInteger)
     model_body = db.Column(db.Text)

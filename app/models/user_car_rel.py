@@ -9,6 +9,10 @@ class UserCarAssociation(db.Model):
     memories = db.Column(db.Text)
     year_purchased = db.Column(db.Integer)
     has_custom_image = db.Column(db.Boolean, default=False)
+    is_custom = db.Column(db.Boolean, default=False)  # Flag to indicate custom car data
+    custom_make = db.Column(db.String(100), nullable=True)
+    custom_model = db.Column(db.String(100), nullable=True)
+    custom_variant = db.Column(db.String(100), nullable=True)
 
     user = db.relationship("User", back_populates="cars")
     car = db.relationship("Car", back_populates="users")

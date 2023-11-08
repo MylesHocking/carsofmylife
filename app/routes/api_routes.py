@@ -38,30 +38,65 @@ def get_car_models(make):
 # Fetch compound of year and car trims based on model name
 @api.route('/car_years_and_trims/<model_name>')
 def get_car_years_and_trims(model_name):
-    years_and_trims = db.session.query(Car.model_year, Car.model_trim, Car.model_id).filter(Car.model_name == model_name).distinct(Car.model_year, Car.model_trim).all()
-    return jsonify([{"year": year_and_trim[0], "trim": year_and_trim[1], "model_id": year_and_trim[2]} for year_and_trim in years_and_trims])
+    years_and_trims = db.session.query(Car.model_year, Car.model_trim, Car.model_id, Car.is_generic_model).filter(Car.model_name == model_name).distinct(Car.model_year, Car.model_trim).all()
+    return jsonify([{"year": year_and_trim[0], "trim": year_and_trim[1], "model_id": year_and_trim[2], "is_generic_model": year_and_trim[3]} for year_and_trim in years_and_trims])
 
 
 @api.route('/add_car', methods=['GET'])
 def add_car_page():
     return render_template('add_car.html')
 
+suggestion_milestones = {
+    7: "Why not contact some of the people you traveled around with in that car? It's good to talk.",
+    8: "You can invite people to join; just enter their email here.",
+    9: "Have you seen the chat forum for this model? Just click here."
+    # Add more milestones as needed
+}
+
+def get_suggestions_for_user(user_id):
+    user_cars_count = UserCarAssociation.query.filter_by(user_id=user_id).count()
+    print(f"User has {user_cars_count} cars")
+    for milestone, suggestion in sorted(suggestion_milestones.items()):
+        if user_cars_count == milestone:
+            return suggestion
+    return None
+
 @api.route('/add_car', methods=['POST'])
 def add_car():
     # Your code to handle the form submission goes here
     data = request.form
     file = request.files.get('file', None)
-    model_id = int(data.get('model_id'))  # Convert to integer
     rating = int(data.get('rating'))
     memories = data['memories']
     year_purchased = data.get('year_purchased')
     user_id = data.get('user_id')
     print('user_id is:' + str(user_id))
+    
+    # Extract custom fields
+    custom_make = data.get('custom_make', None)
+    custom_model = data.get('custom_model', None)
+    custom_variant = data.get('custom_variant', None)
 
+    if 'model_id' in data and data['model_id']:
+        model_id = int(data.get('model_id'))
+    else:
+        model_id = 1 # custom car
+    
     # Check if an image was uploaded
     has_custom_image = file and file.filename.split('.')[-1] in ALLOWED_EXTENSIONS
 
-    new_car_id = db_ops.add_car_to_db(model_id, rating, memories, user_id, year_purchased, has_custom_image)
+    new_car_id = db_ops.add_car_to_db(
+    model_id=model_id,
+    rating=rating,
+    memories=memories,
+    user_id=user_id,
+    year_purchased=year_purchased,
+    custom_make=custom_make,
+    custom_model=custom_model,
+    custom_variant=custom_variant,
+    has_custom_image=has_custom_image
+    )
+
     # Check if a custom image has been uploaded
     if has_custom_image:
         # Now you can use new_car_id to upload the image to GCP
@@ -76,12 +111,19 @@ def add_car():
         # Create a thumbnail
         create_thumbnail(file, thumbnail_folder_path + file.filename, GCP_BUCKET_NAME)
     
-    return jsonify({"message": "Car added successfully"})
+    # After adding a new car, check if there's a suggestion for the user
+    suggestion = get_suggestions_for_user(user_id)
+
+    # Include the suggestion in the response if there is one
+    if suggestion:
+        return jsonify({"message": "Car added successfully", "suggestion": suggestion})
+    else:
+        return jsonify({"message": "Car added successfully"})
 
 @api.route('/user_cars/<int:user_id>', methods=['GET'])
 def get_user_cars(user_id):
     user_cars = db.session.query(UserCarAssociation, Car, CarImage).\
-                join(Car, UserCarAssociation.model_id == Car.model_id).\
+                join(Car, UserCarAssociation.model_id == Car.model_id, isouter=True).\
                 outerjoin(CarImage, UserCarAssociation.id == CarImage.association_id).\
                 filter(UserCarAssociation.user_id == user_id).\
                 order_by(UserCarAssociation.year_purchased).all()
@@ -89,19 +131,20 @@ def get_user_cars(user_id):
     cars_data = [
         {
             'model_id': car.UserCarAssociation.model_id,
-            'make': car.Car.model_make_id,
-            'model': car.Car.model_name,
-            'model_trim': car.Car.model_trim,  
-            'model_year': car.Car.model_year,  
+            'make': car.UserCarAssociation.custom_make if car.UserCarAssociation.model_id == 1 else car.Car.model_make_id,
+            'model': car.UserCarAssociation.custom_model if car.UserCarAssociation.model_id == 1 else car.Car.model_name,
+            'model_trim': car.Car.model_trim if car.Car else None,
+            'model_year': car.Car.model_year if car.Car else None,
             'rating': car.UserCarAssociation.rating,
             'memories': car.UserCarAssociation.memories,
             'year_purchased': car.UserCarAssociation.year_purchased,
             'image_url': car.CarImage.image_url if car.CarImage else None,
-            'has_custom_image': car.UserCarAssociation.has_custom_image,  
-            'user_car_association_id': car.UserCarAssociation.id 
+            'has_custom_image': car.UserCarAssociation.has_custom_image,
+            'user_car_association_id': car.UserCarAssociation.id
         } for car in user_cars
     ]
     return jsonify(cars_data)
+
 
 
 
@@ -143,6 +186,118 @@ def get_first_image_type(image_type, model_id=None):
 
     return jsonify({"error": "No images found"}), 200
 
+from concurrent.futures import ThreadPoolExecutor
+import random
+def generate_url(blob):
+    url = blob.generate_signed_url(
+        version="v4",
+        expiration=datetime.timedelta(minutes=15),
+        method="GET"
+    )
+    return url
+
+def get_multiple_thumbs_for_generic_model(make, model):
+    print(f"[DEBUG {datetime.datetime.now()}] Starting get_multiple_thumbs_for_generic_model for {make} {model}")
+    
+    # Get DB connection
+    conn = db_ops.get_db_conn()
+    cur = conn.cursor()
+
+    # Step 1: Get all model_ids with the same make and model
+    print(f"[DEBUG {datetime.datetime.now()}] Fetching sibling model IDs.")
+    query = "SELECT model_id FROM car_data WHERE model_make_id = %s AND model_name = %s"
+    cur.execute(query, (make, model))
+    sibling_model_ids = [row[0] for row in cur.fetchall()]
+    print(f"[DEBUG {datetime.datetime.now()}] Found sibling model IDs: {sibling_model_ids}")
+
+    cur.close()
+    conn.close()
+    # Randomly pick 6 siblings
+    random_sample_ids = random.sample(sibling_model_ids, min(6, len(sibling_model_ids)))
+
+    image_urls = []
+
+    # Get the GCP bucket
+    bucket = storage_client.get_bucket(GCP_BUCKET_NAME)
+
+    # Fetch thumbnails in parallel
+    with ThreadPoolExecutor() as executor:
+        for model_id in random_sample_ids:
+            folder_name = f'thumbs/{model_id}/'
+            blobs = list(bucket.list_blobs(prefix=folder_name))
+                
+            # We only need the first thumbnail for each model
+            if blobs:
+                blob = blobs[0]
+                future = executor.submit(generate_url, blob)
+                url = future.result()
+                image_urls.append(url)
+                print(f"[DEBUG {datetime.datetime.now()}] Generated URL: {url}")
+                
+    # Step 3: Return the list of image URLs
+    if not image_urls:
+        print(f"[DEBUG {datetime.datetime.now()}] No images found.")
+        return jsonify({"error": "No images found"}), 200
+    
+    print(f"[DEBUG {datetime.datetime.now()}] Finished fetching. Returning URLs.")
+    return jsonify({"image_urls": image_urls})
+
+
+def get_multiple_thumbs_for_generic_model2(make, model):
+    print(f"[DEBUG {datetime.datetime.now()}] Starting get_multiple_thumbs_for_generic_model for {make} {model}")
+    
+    # Get DB connection
+    conn = db_ops.get_db_conn()
+    cur = conn.cursor()
+
+    # Step 1: Get all model_ids with the same make and model
+    print(f"[DEBUG {datetime.datetime.now()}] Fetching sibling model IDs.")
+    query = "SELECT model_id FROM car_data WHERE model_make_id = %s AND model_name = %s"
+    cur.execute(query, (make, model))
+    sibling_model_ids = [row[0] for row in cur.fetchall()]
+    print(f"[DEBUG {datetime.datetime.now()}] Found sibling model IDs: {sibling_model_ids}")
+
+    cur.close()
+    conn.close()
+
+    image_urls = []
+
+    # Step 2: For each model_id, get the first thumbnail
+    print(f"[DEBUG {datetime.datetime.now()}] Fetching thumbnails.")
+    for model_id in sibling_model_ids:
+        folder_name = f'thumbs/{model_id}/'
+        bucket = storage_client.get_bucket(GCP_BUCKET_NAME)
+        blobs = list(bucket.list_blobs(prefix=folder_name))
+
+        for blob in blobs[:1]:  # Only need the first thumbnail
+            if blob.name != folder_name:  # Skip the folder itself
+                url = blob.generate_signed_url(
+                    version="v4",
+                    expiration=datetime.timedelta(minutes=15),  # URL valid for 15 minutes
+                    method="GET"
+                )
+                image_urls.append(url)
+                print(f"[DEBUG {datetime.datetime.now()}] Generated URL: {url}")
+                break  # Found one thumbnail for this model_id, move to the next one
+
+    # Step 3: Return the list of image URLs
+    if not image_urls:
+        print(f"[DEBUG {datetime.datetime.now()}] No images found.")
+        return jsonify({"error": "No images found"}), 200
+    
+    print(f"[DEBUG {datetime.datetime.now()}] Finished fetching. Returning URLs.")
+    return jsonify({"image_urls": image_urls})
+
+
+@api.route('/get_multiple_thumbs', methods=['GET'])
+def get_multiple_thumbs_route():
+    make = request.args.get('make')
+    model = request.args.get('model')
+
+    if not make or not model:
+        return jsonify({"error": "Make and model parameters are required"}), 400
+
+    return get_multiple_thumbs_for_generic_model(make, model)
 
 @api.route('/verify_google_token', methods=['POST'])
 def verify_google_token():
@@ -186,5 +341,26 @@ def verify_google_token():
     except Exception as e:
         print(f"An error occurred: {e}")
 
-
     return jsonify({"status": "success", "message": "Valid token", "token_info": token_info, "user_info": user_info}), 200
+
+# app/routes/api_routes.py
+from flask import Blueprint, request, jsonify
+from app.utils.email_utils import send_simple_message
+from app.config import MAILGUN_DOMAIN, MAILGUN_API_KEY
+
+@api.route('/share_chart', methods=['POST'])
+def share_chart():
+    data = request.json
+    recipient_emails = data['recipients']  # Assuming this is a list of emails
+    subject = "Check out my car-chart on Cars of My Life"
+    text = data['message']  # The message to send
+
+    # Call the email utility function for each recipient
+    for email in recipient_emails:
+        response = send_simple_message(MAILGUN_DOMAIN, MAILGUN_API_KEY, email, subject, text)
+        if not response.ok:
+            # If any email fails to send, return an error response
+            return jsonify({"message": "Failed to send email to one or more recipients."}), 500
+
+    # If all emails are sent successfully
+    return jsonify({"message": "Emails sent successfully!"}), 200
