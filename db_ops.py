@@ -32,3 +32,30 @@ def add_car_to_db(model_id, rating, memories, user_id, year_purchased, custom_ma
     # Return the ID of the newly created association
     return new_association.id
 
+def update_car_in_db(car_id, memories, has_custom_image=None):
+    # Find the existing car entry by ID
+    car_to_edit = UserCarAssociation.query.get(car_id)
+
+    # Check if the car exists
+    if not car_to_edit:
+        raise ValueError("Car not found")
+
+    # Update the fields
+    car_to_edit.memories = memories
+    if has_custom_image is not None:
+        car_to_edit.has_custom_image = has_custom_image
+
+    # Commit the changes to the database
+    db.session.commit()
+
+    # You might want to return something, like a success message or the updated car data
+    return {"message": "Car updated successfully", "car_id": car_id}
+
+def delete_car_from_db(car_id):
+    car_to_delete = UserCarAssociation.query.get(car_id)
+    if car_to_delete:
+        db.session.delete(car_to_delete)
+        db.session.commit()
+        return True
+    else:
+        return False

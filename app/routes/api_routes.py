@@ -120,6 +120,42 @@ def add_car():
     else:
         return jsonify({"message": "Car added successfully"})
 
+@api.route('/edit_car/<int:car_id>', methods=['POST'])
+def edit_car(car_id):
+    data = request.form
+    file = request.files.get('file', None)
+    memories = data['memories']
+
+    # Check if an image was uploaded
+    if file and file.filename.split('.')[-1] in ALLOWED_EXTENSIONS:
+        has_custom_image = True
+        db_ops.update_car_in_db(
+            car_id=car_id,
+            memories=memories,
+            has_custom_image=has_custom_image
+        )
+        # Add code to handle the new image upload
+        # ...
+    else:
+        db_ops.update_car_in_db(
+            car_id=car_id,
+            memories=memories
+            # Note: Not passing has_custom_image
+        )
+
+    return jsonify({"message": "Car updated successfully"})
+
+
+@api.route('/delete_car/<int:car_id>', methods=['DELETE'])
+def delete_car(car_id):
+    print(f"Deleting car with ID: {car_id}")
+    success = db_ops.delete_car_from_db(car_id)
+    if success:
+        return jsonify({"message": "Car deleted successfully"}), 200
+    else:
+        return jsonify({"error": "Car not found"}), 404
+
+
 @api.route('/user_cars/<int:user_id>', methods=['GET'])
 def get_user_cars(user_id):
     user_cars = db.session.query(UserCarAssociation, Car, CarImage).\
@@ -130,6 +166,7 @@ def get_user_cars(user_id):
 
     cars_data = [
         {
+            'id': car.UserCarAssociation.id,
             'model_id': car.UserCarAssociation.model_id,
             'make': car.UserCarAssociation.custom_make if car.UserCarAssociation.model_id == 1 else car.Car.model_make_id,
             'model': car.UserCarAssociation.custom_model if car.UserCarAssociation.model_id == 1 else car.Car.model_name,
@@ -166,13 +203,13 @@ def get_custom_photo(user_car_association_id):
 
 def get_first_image_type(image_type, model_id=None):
     folder_name = f'{image_type}/{model_id}/' if model_id else f'{image_type}/'
-    print(f"Searching in folder: {folder_name}")  # Print the folder name you are searching in
+    #print(f"Searching in folder: {folder_name}")  # Print the folder name you are searching in
 
     bucket = storage_client.get_bucket(GCP_BUCKET_NAME)
     blobs = list(bucket.list_blobs(prefix=folder_name))  # Convert iterator to list
     
     blob_names = [blob.name for blob in blobs]
-    print(f"Blobs found: {blob_names}")  # Print the names of blobs retrieved
+    #print(f"Blobs found: {blob_names}")  # Print the names of blobs retrieved
 
     for blob in blobs:
         if blob.name != folder_name:  # Skip the folder itself
@@ -197,7 +234,7 @@ def generate_url(blob):
     return url
 
 def get_multiple_thumbs_for_generic_model(make, model):
-    print(f"[DEBUG {datetime.datetime.now()}] Starting get_multiple_thumbs_for_generic_model for {make} {model}")
+    #print(f"[DEBUG {datetime.datetime.now()}] Starting get_multiple_thumbs_for_generic_model for {make} {model}")
     
     # Get DB connection
     conn = db_ops.get_db_conn()
