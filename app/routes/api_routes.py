@@ -1,15 +1,17 @@
-from flask import Blueprint, jsonify, render_template, request
+from flask import Blueprint, jsonify,request, render_template
 from app import db  
 from app.models import Car, UserCarAssociation, CarImage, User
 import db_ops
 from google.cloud import storage
 import datetime 
 import requests
-import json
-import os
-from werkzeug.utils import secure_filename
+#import json
+#import os
+#from werkzeug.utils import secure_filename
+from werkzeug.security import check_password_hash, generate_password_hash
 from app.utils.image_utils import create_thumbnail
 from app.utils.gcp_utils import storage_client
+import bcrypt
 
 api = Blueprint('api', __name__)
 
@@ -380,8 +382,50 @@ def verify_google_token():
 
     return jsonify({"status": "success", "message": "Valid token", "token_info": token_info, "user_info": user_info}), 200
 
-# app/routes/api_routes.py
-from flask import Blueprint, request, jsonify
+@api.route('/signup', methods=['POST'])
+def signup():
+    email = request.json['email']
+    password = request.json['password']
+    firstname = request.json['firstname']
+    lastname = request.json['lastname']
+    #debug
+    print('email is:' + email)
+
+    # Check if user already exists
+    existing_user = User.query.filter_by(email=email).first()
+    if existing_user:
+        return jsonify({"message": "User already exists"}), 409
+
+    # Hash password
+    hashed_password = generate_password_hash(password)
+
+    # Create new user
+    new_user = User(email=email, password_hash=hashed_password, username=email, firstname=firstname, lastname=lastname)
+    db.session.add(new_user)
+    db.session.commit()
+    # Convert the user model to a dictionary
+    user_info = new_user.to_dict()
+    return jsonify({"status": "success", "message": "User added", "user_info": user_info}), 200
+
+@api.route('/login', methods=['POST'])
+def login():
+    data = request.json
+    email = data.get('email')
+    password = data.get('password')
+    #debug
+    print('email is:' + email)
+    print('password is:' + password)
+    
+    user = User.query.filter_by(email=email).first()
+    #debug
+    print('user is:' + str(user))
+    user_info = user.to_dict()
+    if user and check_password_hash(user.password_hash, password):
+        # Generate and return token/session info
+        return jsonify({"message": "Login successful", "user_info": user_info}), 200
+    else:
+        return jsonify({"message": "Invalid credentials"}), 401
+
 from app.utils.email_utils import send_simple_message
 from app.config import MAILGUN_DOMAIN, MAILGUN_API_KEY
 
