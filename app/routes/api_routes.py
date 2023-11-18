@@ -11,7 +11,6 @@ import requests
 from werkzeug.security import check_password_hash, generate_password_hash
 from app.utils.image_utils import create_thumbnail
 from app.utils.gcp_utils import storage_client
-import bcrypt
 
 api = Blueprint('api', __name__)
 
