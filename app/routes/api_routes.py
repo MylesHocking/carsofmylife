@@ -444,3 +444,13 @@ def share_chart():
 
     # If all emails are sent successfully
     return jsonify({"message": "Emails sent successfully!"}), 200
+
+@api.route('/users', methods=['GET'])
+def get_users():
+    try:
+        users = User.query.all()  # Fetch all users from the database
+        user_list = [{'user_id': user.id, 'firstname': user.firstname, 'lastname': user.lastname} for user in users]
+        return jsonify(user_list), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
