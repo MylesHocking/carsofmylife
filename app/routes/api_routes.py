@@ -1,6 +1,8 @@
 from flask import Blueprint, jsonify,request, render_template
 from app import db  
 from app.models import Car, UserCarAssociation, CarImage, User
+from app.utils.email_utils import send_simple_message
+from app.config import MAILGUN_DOMAIN, MAILGUN_API_KEY, UPLOAD_FOLDER
 import db_ops
 from google.cloud import storage
 import datetime 
@@ -16,6 +18,7 @@ api = Blueprint('api', __name__)
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 GCP_BUCKET_NAME = 'cars-of-my-life-images'
+
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -101,8 +104,8 @@ def add_car():
     # Check if a custom image has been uploaded
     if has_custom_image:
         # Now you can use new_car_id to upload the image to GCP
-        folder_path = f"user_images/{new_car_id}/"
-        thumbnail_folder_path = f"user_images/{new_car_id}/thumb/"
+        folder_path = f"{UPLOAD_FOLDER}/{new_car_id}/"
+        thumbnail_folder_path = f"{UPLOAD_FOLDER}/{new_car_id}/thumb/"
 
         # Upload main image
         blob = storage.Blob(folder_path + file.filename, bucket=storage_client.bucket(GCP_BUCKET_NAME))
@@ -192,7 +195,7 @@ def get_first_thumb(model_id):
 
 @api.route('/get_custom_thumb/<user_car_association_id>', methods=['GET'])
 def get_custom_thumb(user_car_association_id):
-    return get_first_image_type(f'user_images/{user_car_association_id}/thumb')
+    return get_first_image_type(f'{UPLOAD_FOLDER}/{user_car_association_id}/thumb')
 
 @api.route('/get_first_photo/<model_id>', methods=['GET'])
 def get_first_photo(model_id):
@@ -200,7 +203,7 @@ def get_first_photo(model_id):
 
 @api.route('/get_custom_photo/<user_car_association_id>', methods=['GET'])
 def get_custom_photo(user_car_association_id):
-    return get_first_image_type(f'user_images/{user_car_association_id}')
+    return get_first_image_type(f'{UPLOAD_FOLDER}/{user_car_association_id}')
 
 def get_first_image_type(image_type, model_id=None):
     folder_name = f'{image_type}/{model_id}/' if model_id else f'{image_type}/'
@@ -425,8 +428,6 @@ def login():
     else:
         return jsonify({"message": "Invalid credentials"}), 401
 
-from app.utils.email_utils import send_simple_message
-from app.config import MAILGUN_DOMAIN, MAILGUN_API_KEY
 
 @api.route('/share_chart', methods=['POST'])
 def share_chart():
