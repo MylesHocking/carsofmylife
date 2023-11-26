@@ -41,5 +41,7 @@ class Car(db.Model):
     model_sold_in_us = db.Column(db.BigInteger)
     model_co2 = db.Column(db.Float)
     model_make_display = db.Column(db.Text)
+    
     users = db.relationship("UserCarAssociation", back_populates="car")
+    events = db.relationship("Event", back_populates="car")
  

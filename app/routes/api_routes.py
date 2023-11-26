@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify,request, render_template
 from app import db  
-from app.models import Car, UserCarAssociation, CarImage, User
+from app.models import Car, UserCarAssociation, CarImage, User, Event, Comment
 from app.utils.email_utils import send_simple_message
 from app.config import MAILGUN_DOMAIN, MAILGUN_API_KEY, UPLOAD_FOLDER
 import db_ops
@@ -100,6 +100,18 @@ def add_car():
     custom_variant=custom_variant,
     has_custom_image=has_custom_image
     )
+    # Check if this is the first car for the user
+    user_cars_count = UserCarAssociation.query.filter_by(user_id=user_id).count()
+    if user_cars_count == 1:  # This means the car just added is the first car
+        # Create an event for the first car addition
+        first_car_event = Event(
+            event_type='first_car_added',
+            user_id=user_id,
+            timestamp=datetime.datetime.utcnow(),
+            # Add additional info if needed
+        )
+        db.session.add(first_car_event)
+        db.session.commit()
 
     # Check if a custom image has been uploaded
     if has_custom_image:
@@ -405,6 +417,20 @@ def signup():
     new_user = User(email=email, password_hash=hashed_password, username=email, firstname=firstname, lastname=lastname)
     db.session.add(new_user)
     db.session.commit()
+
+    # Create an event for new user signup
+    new_event = Event(
+        event_type='new_user',
+        user_id=new_user.id,
+        timestamp=datetime.datetime.utcnow(),  # Assuming you have from datetime import datetime
+        # You can add more fields if needed
+    )
+    db.session.add(new_event)
+    db.session.commit()
+    #debug
+    print('new_user is:' + str(new_user))
+    print('new_event is:' + str(new_event))
+
     # Convert the user model to a dictionary
     user_info = new_user.to_dict()
     return jsonify({"status": "success", "message": "User added", "user_info": user_info}), 200
@@ -455,3 +481,116 @@ def get_users():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@api.route('/events', methods=['GET'])
+def get_events():
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+
+    events_pagination = Event.query.order_by(Event.timestamp.desc()).paginate(page=page, per_page=per_page, error_out=False)
+    events = events_pagination.items
+
+    events_data = []
+    for event in events:
+        # Fetch user details
+        user = User.query.get(event.user_id)
+        if not user:
+            continue  # or handle the missing user scenario
+        event_info = {
+            'event_id': event.event_id,
+            'event_type': event.event_type,
+            'timestamp': event.timestamp.isoformat(),
+            'user_id': event.user_id,
+            'firstname': user.firstname, 
+            'lastname': user.lastname, 
+            # You can add more general fields here
+        }
+
+        # Add specific data for 'first_car_added' event type
+        if event.event_type == 'first_car_added':
+            car_association = UserCarAssociation.query.filter_by(user_id=event.user_id).first()
+            if car_association:
+                # Basic car information
+                event_info.update({
+                    'rating': car_association.rating,
+                    'memories': car_association.memories,
+                    'year_purchased': car_association.year_purchased,
+                    'user_car_association_id': car_association.id,
+                    'model_id': car_association.model_id,
+                    'has_custom_image': car_association.has_custom_image,
+                    'is_custom': car_association.is_custom
+                })
+
+                # Custom or standard car details
+                if car_association.is_custom:
+                    event_info.update({
+                        'car_make': car_association.custom_make,
+                        'car_model': car_association.custom_model,
+                        'car_variant': car_association.custom_variant
+                    })
+                else:
+                    car = Car.query.get(car_association.model_id)
+                    if car:
+                        event_info.update({
+                            'model_make_id': car.model_make_id,  # Assuming this is how you get the make
+                            'model_name': car.model_name,    # Assuming this is how you get the model
+                            'model_trim': car.model_trim,  # Assuming this is how you get the variant
+                        })
+                            
+
+        events_data.append(event_info)
+
+    return jsonify({
+        'events': events_data,
+        'total_pages': events_pagination.pages,
+        'current_page': events_pagination.page
+    })
+
+@api.route('/add_comment', methods=['POST'])
+def add_comment():
+    user_id = request.json.get('user_id')
+    event_id = request.json.get('event_id', None)
+    uca_id = request.json.get('user_car_association_id', None)  # UserCarAssociation ID
+    text = request.json.get('text')
+    parent_comment_id = request.json.get('parent_comment_id', None)
+
+    if not text:
+        return jsonify({'message': 'Comment text is required'}), 400
+
+    comment = Comment(
+        user_id=user_id, 
+        event_id=event_id,
+        user_car_association_id=uca_id,
+        text=text,
+        parent_comment_id=parent_comment_id
+    )
+
+    db.session.add(comment)
+    db.session.commit()
+
+    return jsonify({'message': 'Comment added successfully', 'comment_id': comment.id}), 201
+
+@api.route('/get_comments', methods=['GET'])
+def get_comments():
+    event_id = request.args.get('event_id', None)
+    uca_id = request.args.get('user_car_association_id', None)
+
+    query = Comment.query
+    if event_id:
+        query = query.filter_by(event_id=event_id)
+    if uca_id:
+        query = query.filter_by(user_car_association_id=uca_id)
+
+    comments = query.order_by(Comment.timestamp.asc()).all()
+
+    comments = query.join(User).add_columns(
+        Comment.id, Comment.text, Comment.timestamp, 
+        User.firstname, User.lastname
+    ).all()
+
+    comments_data = [{
+        'id': c.id, 'text': c.text, 
+        'timestamp': c.timestamp.isoformat() if c.timestamp else None, 
+        'firstname': c.firstname, 'lastname': c.lastname
+    } for c in comments]
+
+    return jsonify(comments_data)

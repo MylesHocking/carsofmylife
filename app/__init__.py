@@ -5,7 +5,6 @@ from flask_cors import CORS
 from .config import ALLOWED_ORIGINS
 from flask_migrate import Migrate
 
-
 # Initialize SQLAlchemy with no settings
 db = SQLAlchemy()
 
