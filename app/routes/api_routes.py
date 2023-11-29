@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify,request, render_template
 from app import db  
-from app.models import Car, UserCarAssociation, CarImage, User, Event, Comment
+from app.models import Car, UserCarAssociation, CarImage, User, Event, Comment, UserFriends
+from app.models.user import SharingPreferenceEnum
 from app.utils.email_utils import send_simple_message
 from app.config import MAILGUN_DOMAIN, MAILGUN_API_KEY, UPLOAD_FOLDER
 import db_ops
@@ -472,14 +473,35 @@ def share_chart():
     # If all emails are sent successfully
     return jsonify({"message": "Emails sent successfully!"}), 200
 
+from flask import g  # Import global context object, typically used for request-specific data like current user
+
 @api.route('/users', methods=['GET'])
 def get_users():
     try:
-        users = User.query.all()  # Fetch all users from the database
-        user_list = [{'user_id': user.id, 'firstname': user.firstname, 'lastname': user.lastname} for user in users]
+        current_user_id = request.args.get('userId')
+        users = User.query.filter(User.sharing_preference == SharingPreferenceEnum.Global).all()
+
+        user_list = []
+        for user in users:
+            # Check if the current user is friends with this user
+            is_friend = UserFriends.query.filter(
+                ((UserFriends.user_id == current_user_id) & (UserFriends.friend_id == user.id)) |
+                ((UserFriends.friend_id == current_user_id) & (UserFriends.user_id == user.id))
+            ).first() is not None
+
+            # Exclude the current user from the list
+            if user.id != current_user_id:
+                user_list.append({
+                    'user_id': user.id,
+                    'firstname': user.firstname,
+                    'lastname': user.lastname,
+                    'is_friend': is_friend
+                })
+
         return jsonify(user_list), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 @api.route('/events', methods=['GET'])
 def get_events():
@@ -594,3 +616,46 @@ def get_comments():
     } for c in comments]
 
     return jsonify(comments_data)
+
+
+@api.route('/get_user_profile/<int:user_id>', methods=['GET'])
+def get_user_profile(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    
+    user_data = {
+        "firstname": user.firstname,
+        "lastname": user.lastname,
+        "sharingPreference": user.sharing_preference.name  # Assuming Enum value
+    }
+    return jsonify(user_data)
+
+@api.route('/update_user_profile/<int:user_id>', methods=['PUT'])
+def update_user_profile(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    print(f"User profile before update: {user.to_dict()}")
+    data = request.json
+    try:
+        print(f"Data received: {data}")
+        if 'firstname' in data:
+            user.firstname = data['firstname']
+            print(f"User firstname updated: {user.firstname}")
+        if 'lastname' in data:
+            user.lastname = data['lastname']
+            print(f"User lastname updated: {user.lastname}")
+        if 'sharingPreference' in data:
+            # Convert the string to an enum value
+            preference = SharingPreferenceEnum[data['sharingPreference']]
+            user.sharing_preference = preference
+            print(f"User sharing preference updated: {user.sharing_preference}")
+        print(f"User profile updated: {user.to_dict()}")
+        print(f"Sharing preference: {user.sharing_preference}")
+        print(f"Sharing preference name: {user.sharing_preference.name}")
+        db.session.commit()
+        return jsonify({"message": "User profile updated successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500

@@ -5,4 +5,5 @@ from .user_car_rel import UserCarAssociation
 from .car_image import CarImage
 from .event import Event
 from .comment import Comment
+from .user_friends import UserFriends
 
