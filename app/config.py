@@ -1,5 +1,6 @@
 import os
 
+
 SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
 if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith("postgres://"):
     SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("postgres://", "postgresql://", 1)
@@ -26,3 +27,11 @@ UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', 'dev/user_images')
 
 MAILGUN_DOMAIN = 'mg.carsofmy.life'
 MAILGUN_API_KEY = 'e64d5e0d1edce6268292e80779b962f9-8c9e82ec-82cfabe6'
+
+FLASK_SECRET_KEY = 'a3e269b7d67596321e2185d6933bb424618486bdf9ba3df3'
+
+LINKEDIN_CLIENT_ID = '776aytlm7vkif8'
+LINKEDIN_CLIENT_SECRET = 'Azv16lwS2Okxd7rZ'
+LINKEDIN_REDIRECT_URI = 'http://localhost:5000/api/linkedin/callback'
+FACEBOOK_CLIENT_ID = ''
+FACEBOOK_CLIENT_SECRET = ''

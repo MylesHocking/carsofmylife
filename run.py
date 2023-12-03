@@ -6,6 +6,7 @@ import os
 
 from app import create_app
 from app import db
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 app = create_app()
 

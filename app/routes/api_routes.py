@@ -1,9 +1,9 @@
-from flask import Blueprint, jsonify,request, render_template
+from flask import Blueprint, jsonify, request, render_template, redirect
 from app import db  
 from app.models import Car, UserCarAssociation, CarImage, User, Event, Comment, UserFriends
 from app.models.user import SharingPreferenceEnum
 from app.utils.email_utils import send_simple_message
-from app.config import MAILGUN_DOMAIN, MAILGUN_API_KEY, UPLOAD_FOLDER
+from app.config import MAILGUN_DOMAIN, MAILGUN_API_KEY, UPLOAD_FOLDER, LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET, LINKEDIN_REDIRECT_URI
 import db_ops
 from google.cloud import storage
 import datetime 
@@ -436,6 +436,71 @@ def signup():
     user_info = new_user.to_dict()
     return jsonify({"status": "success", "message": "User added", "user_info": user_info}), 200
 
+@api.route('/linkedin/callback')
+def linkedin_callback():
+    print('linkedin_callback triggered')
+    code = request.args.get('code')
+    print('code is:' + code)
+    token_info = exchange_code_for_token(code)
+    print('token_info is:' + str(token_info))
+    access_token = token_info.get('access_token')
+    print('access_token is:' + access_token)
+    user_info = get_user_info(access_token)
+    print('user_info is:' + str(user_info))
+    # Handle user_info (e.g., create a user session, store details in the database)
+    if user_info:
+        new_user_data = linkedin_signup(user_info)
+        return redirect(f'http://localhost:3000/linkedin-callback?user_id={new_user_data["id"]}&email={new_user_data["email"]}&firstname={new_user_data["firstname"]}&lastname={new_user_data["lastname"]}&profile_picture={new_user_data["profile_picture"]}')
+    else:
+        return jsonify({"message": "Failed to retrieve user info"}), 500
+
+def get_user_info(access_token):
+    url = 'https://api.linkedin.com/v2/userinfo'
+    headers = {
+        'Authorization': f'Bearer {access_token}',
+        'cache-control': "no-cache"
+    }
+    response = requests.get(url, headers=headers)
+    return response.json()  # This contains the user's LinkedIn profile information
+def exchange_code_for_token(code):
+    url = 'https://www.linkedin.com/oauth/v2/accessToken'
+    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+    data = {
+        'grant_type': 'authorization_code',
+        'code': code,
+        'redirect_uri': LINKEDIN_REDIRECT_URI,
+        'client_id': LINKEDIN_CLIENT_ID,
+        'client_secret': LINKEDIN_CLIENT_SECRET
+    }
+    response = requests.post(url, headers=headers, data=data)
+    return response.json()  # This contains the access token
+
+def linkedin_signup(user_data):
+    print('linkedin_signup triggered with user_data:' + str(user_data))
+    email = user_data['email']
+    firstname = user_data['given_name']
+    lastname = user_data['family_name']
+    picture = user_data['picture']
+    # Check if user already exists
+    linkedin_sub = user_data['sub']  # Assuming 'sub' is in user_data
+    existing_user = User.query.filter_by(linkedin_sub=linkedin_sub).first()
+    if existing_user:
+        return jsonify({"message": "User already exists"}), 409
+
+    # Create new user with LinkedIn data
+    new_user = User(email=email, username=email, firstname=firstname, lastname=lastname, linkedin_sub=linkedin_sub, profile_picture=picture)
+    db.session.add(new_user)
+    db.session.commit()
+
+    # Create an event for new user signup
+    new_event = Event(event_type='new_user', user_id=new_user.id, timestamp=datetime.datetime.utcnow())
+    db.session.add(new_event)
+    db.session.commit()
+
+    # Convert the user model to a dictionary
+    user_info = new_user.to_dict()
+    return user_info
+
 @api.route('/login', methods=['POST'])
 def login():
     data = request.json
@@ -454,7 +519,6 @@ def login():
         return jsonify({"message": "Login successful", "user_info": user_info}), 200
     else:
         return jsonify({"message": "Invalid credentials"}), 401
-
 
 @api.route('/share_chart', methods=['POST'])
 def share_chart():
@@ -524,6 +588,7 @@ def get_events():
             'user_id': event.user_id,
             'firstname': user.firstname, 
             'lastname': user.lastname, 
+            'profile_picture': user.profile_picture
             # You can add more general fields here
         }
 
