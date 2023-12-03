@@ -3,7 +3,7 @@ from app import db
 from app.models import Car, UserCarAssociation, CarImage, User, Event, Comment, UserFriends
 from app.models.user import SharingPreferenceEnum
 from app.utils.email_utils import send_simple_message
-from app.config import MAILGUN_DOMAIN, MAILGUN_API_KEY, UPLOAD_FOLDER, LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET, LINKEDIN_REDIRECT_URI
+from app.config import MAILGUN_DOMAIN, MAILGUN_API_KEY, UPLOAD_FOLDER, LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET, LINKEDIN_REDIRECT_URI, ALLOWED_ORIGINS
 import db_ops
 from google.cloud import storage
 import datetime 
@@ -450,7 +450,7 @@ def linkedin_callback():
     # Handle user_info (e.g., create a user session, store details in the database)
     if user_info:
         new_user_data = linkedin_signup(user_info)
-        return redirect(f'http://localhost:3000/linkedin-callback?user_id={new_user_data["id"]}&email={new_user_data["email"]}&firstname={new_user_data["firstname"]}&lastname={new_user_data["lastname"]}&profile_picture={new_user_data["profile_picture"]}')
+        return redirect(f'{ALLOWED_ORIGINS}/linkedin-callback?user_id={new_user_data["id"]}&email={new_user_data["email"]}&firstname={new_user_data["firstname"]}&lastname={new_user_data["lastname"]}&profile_picture={new_user_data["profile_picture"]}')
     else:
         return jsonify({"message": "Failed to retrieve user info"}), 500
 
