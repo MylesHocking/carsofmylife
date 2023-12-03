@@ -485,7 +485,7 @@ def linkedin_signup(user_data):
     linkedin_sub = user_data['sub']  # Assuming 'sub' is in user_data
     existing_user = User.query.filter_by(linkedin_sub=linkedin_sub).first()
     if existing_user:
-        return jsonify({"message": "User already exists"}), 409
+        return existing_user.to_dict()
 
     # Create new user with LinkedIn data
     new_user = User(email=email, username=email, firstname=firstname, lastname=lastname, linkedin_sub=linkedin_sub, profile_picture=picture)
