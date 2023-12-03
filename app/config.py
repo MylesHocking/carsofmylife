@@ -32,6 +32,6 @@ FLASK_SECRET_KEY = 'a3e269b7d67596321e2185d6933bb424618486bdf9ba3df3'
 
 LINKEDIN_CLIENT_ID = '776aytlm7vkif8'
 LINKEDIN_CLIENT_SECRET = 'Azv16lwS2Okxd7rZ'
-LINKEDIN_REDIRECT_URI = 'http://localhost:5000/api/linkedin/callback'
+LINKEDIN_REDIRECT_URI = os.environ.get('LINKEDIN_REDIRECT_URI', 'http://localhost:5000/api/linkedin/callback')
 FACEBOOK_CLIENT_ID = ''
 FACEBOOK_CLIENT_SECRET = ''
