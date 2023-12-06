@@ -29,7 +29,7 @@ class User(db.Model):
     comments = db.relationship("Comment", back_populates="user")
     friends = db.relationship("UserFriends", back_populates="user", foreign_keys="UserFriends.user_id")
     friend_of = db.relationship("UserFriends", back_populates="friend", foreign_keys="UserFriends.friend_id")
-
+    notifications = db.relationship("Notification", back_populates="user")
     
     def to_dict(self):
         return {

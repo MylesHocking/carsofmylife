@@ -17,7 +17,7 @@ gsutil -m cp -r C:\Users\myles\OneDrive\Documents\GitHub\Google-Image-Scraper\th
 gsutil -m cp -n -r C:\Users\myles\OneDrive\Documents\GitHub\Google-Image-Scraper\photos gs://cars-of-my-life-images/photos
 
 
-psql -h localhost -p 5432 -U Postgres -d carsofmylife
+psql -h localhost -p 5432 -U postgres -d carsofmylife
 
 ALTER TABLE users ADD COLUMN google_id VARCHAR(50) UNIQUE;
 ALTER TABLE users ADD COLUMN is_google_account BOOLEAN DEFAULT FALSE;

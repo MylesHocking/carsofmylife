@@ -1,8 +1,9 @@
 from flask import Blueprint, jsonify, request, render_template, redirect
 from app import db  
-from app.models import Car, UserCarAssociation, CarImage, User, Event, Comment, UserFriends
+from app.models import Car, UserCarAssociation, CarImage, User, Event, Comment, UserFriends, Notification
 from app.models.user import SharingPreferenceEnum
 from app.utils.email_utils import send_simple_message
+from app.utils.notification_utils import send_notification_email
 from app.config import MAILGUN_DOMAIN, MAILGUN_API_KEY, UPLOAD_FOLDER, LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET, LINKEDIN_REDIRECT_URI, ALLOWED_ORIGINS
 import db_ops
 from google.cloud import storage
@@ -652,7 +653,26 @@ def add_comment():
     )
 
     db.session.add(comment)
+    # Get the event
+    event = Event.query.get(event_id)
+    print(f"Event: {event}")
+    #get the user who created the comment
+    commenting_user = User.query.get(user_id)
+    print(f"Commenting user: {commenting_user}")
+    # Create a new notification for the user of the event
+    notification = Notification(
+        user_id=event.user_id,
+        message=f"New comment on your {event.event_type} by {commenting_user.firstname} {commenting_user.lastname}"
+    )
+    print(f"Notification: {notification}")
+    db.session.add(notification)
     db.session.commit()
+
+    #get email of user who created the event
+    user = User.query.get(event.user_id)
+    event_type = event.event_type
+    #send notification email
+    send_notification_email(user.email, "New comment on CarsOfMy.Life ", f"New comment on your {event_type} by {commenting_user.firstname} {commenting_user.lastname}")
 
     return jsonify({'message': 'Comment added successfully', 'comment_id': comment.id}), 201
 

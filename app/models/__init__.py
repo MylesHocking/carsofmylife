@@ -6,4 +6,5 @@ from .car_image import CarImage
 from .event import Event
 from .comment import Comment
 from .user_friends import UserFriends
+from .notification import Notification
 
