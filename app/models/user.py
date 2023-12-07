@@ -24,6 +24,7 @@ class User(db.Model):
     profile_picture = db.Column(db.String(255)) 
     password_hash = db.Column(db.String(128), nullable=True)
     sharing_preference = db.Column(SharingPreferenceType, default=SharingPreferenceEnum.Global)
+    email_notifications = db.Column(db.Boolean, default=True)
     cars = db.relationship("UserCarAssociation", back_populates="user")
     events = db.relationship("Event", back_populates="user")
     comments = db.relationship("Comment", back_populates="user")
@@ -41,5 +42,6 @@ class User(db.Model):
             'lastname': self.lastname,
             'profile_picture': self.profile_picture,
             'email': self.email,
-            'sharing_preference': self.sharing_preference.name
+            'sharing_preference': self.sharing_preference.name,
+            'email_notifications': self.email_notifications
         }

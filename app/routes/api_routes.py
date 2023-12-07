@@ -736,9 +736,10 @@ def update_user_profile(user_id):
             preference = SharingPreferenceEnum[data['sharingPreference']]
             user.sharing_preference = preference
             print(f"User sharing preference updated: {user.sharing_preference}")
+        if 'emailNotifications' in data:
+            user.email_notifications = data['emailNotifications'].lower() == 'true'
+            print(f"User email notifications updated: {user.email_notifications}")
         print(f"User profile updated: {user.to_dict()}")
-        print(f"Sharing preference: {user.sharing_preference}")
-        print(f"Sharing preference name: {user.sharing_preference.name}")
         db.session.commit()
         return jsonify({"message": "User profile updated successfully"}), 200
     except Exception as e:
