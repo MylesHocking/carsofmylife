@@ -643,7 +643,22 @@ def add_comment():
 
     if not text:
         return jsonify({'message': 'Comment text is required'}), 400
+    
+    event = None
+    car_info = None
+    if event_id:
+        event = Event.query.get(event_id)
 
+    if uca_id:
+        uca = UserCarAssociation.query.get(uca_id)
+        if not uca:
+            return jsonify({'message': 'Invalid user car association ID'}), 400
+
+        car = Car.query.get(uca.model_id)  # Fetch the car based on the association
+        if car:
+            car_info = f"{car.model_make_id} {car.model_name}"  # TODO: Sort for custom cars 
+        user_id_of_car = uca.user_id
+        
     comment = Comment(
         user_id=user_id, 
         event_id=event_id,
@@ -653,26 +668,35 @@ def add_comment():
     )
 
     db.session.add(comment)
-    # Get the event
-    event = Event.query.get(event_id)
-    print(f"Event: {event}")
+    
     #get the user who created the comment
     commenting_user = User.query.get(user_id)
     print(f"Commenting user: {commenting_user}")
-    # Create a new notification for the user of the event
+
+    notification_message = ""
+    if event:
+        notification_message = f"New comment on your {event.event_type} by {commenting_user.firstname} {commenting_user.lastname}"
+        notification_user_id = event.user_id
+    elif uca_id and car_info:
+        notification_message = f"New comment on your {car_info} by {commenting_user.firstname} {commenting_user.lastname}"
+        notification_user_id = user_id_of_car
+    else:
+        return jsonify({'message': 'Either event_id or user_car_association_id must be provided'}), 400
+
+
+    # Create a new notification for the user of the event or car
     notification = Notification(
-        user_id=event.user_id,
-        message=f"New comment on your {event.event_type} by {commenting_user.firstname} {commenting_user.lastname}"
+        user_id=notification_user_id,
+        message=notification_message
     )
     print(f"Notification: {notification}")
     db.session.add(notification)
     db.session.commit()
 
     #get email of user who created the event
-    user = User.query.get(event.user_id)
-    event_type = event.event_type
+    user = User.query.get(notification_user_id)
     #send notification email
-    send_notification_email(user.email, "New comment on CarsOfMy.Life ", f"New comment on your {event_type} by {commenting_user.firstname} {commenting_user.lastname}")
+    send_notification_email(user.email, "New comment on CarsOfMy.Life ", notification_message)
 
     return jsonify({'message': 'Comment added successfully', 'comment_id': comment.id}), 201
 
@@ -691,12 +715,14 @@ def get_comments():
 
     comments = query.join(User).add_columns(
         Comment.id, Comment.text, Comment.timestamp, 
+        User.id.label("user_id"), 
         User.firstname, User.lastname
     ).all()
 
     comments_data = [{
         'id': c.id, 'text': c.text, 
         'timestamp': c.timestamp.isoformat() if c.timestamp else None, 
+        'user_id': c.user_id,
         'firstname': c.firstname, 'lastname': c.lastname
     } for c in comments]
 
