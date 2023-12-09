@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request, render_template, redirect
 from app import db  
 from app.models import Car, UserCarAssociation, CarImage, User, Event, Comment, UserFriends, Notification
 from app.models.user import SharingPreferenceEnum
-from app.utils.email_utils import send_simple_message
+from app.utils.email_utils import send_simple_message, send_html_message
 from app.utils.notification_utils import send_notification_email
 from app.config import MAILGUN_DOMAIN, MAILGUN_API_KEY, UPLOAD_FOLDER, LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET, LINKEDIN_REDIRECT_URI, ALLOWED_ORIGINS
 import db_ops
@@ -672,14 +672,17 @@ def add_comment():
     #get the user who created the comment
     commenting_user = User.query.get(user_id)
     print(f"Commenting user: {commenting_user}")
-
+    link_to_commenters_chart = f"{ALLOWED_ORIGINS}/chart/{user_id}"
+    link_to_chart = f"{ALLOWED_ORIGINS}/chart/"
     notification_message = ""
-    if event:
-        notification_message = f"New comment on your {event.event_type} by {commenting_user.firstname} {commenting_user.lastname}"
-        notification_user_id = event.user_id
+    if event:      
+        notification_user_id = event.user_id 
+        link_to_chart = link_to_chart + str(notification_user_id)
+        notification_message = f"New comment on your <a href='{link_to_chart}'>{event.event_type}</a> by <a href='{link_to_commenters_chart}'>{commenting_user.firstname} {commenting_user.lastname}</a>"
     elif uca_id and car_info:
-        notification_message = f"New comment on your {car_info} by {commenting_user.firstname} {commenting_user.lastname}"
         notification_user_id = user_id_of_car
+        link_to_chart = link_to_chart + str(notification_user_id)
+        notification_message = f"New comment on your <a href='{link_to_chart}'>{car_info}</a> by <a href='{link_to_commenters_chart}'>{commenting_user.firstname} {commenting_user.lastname}</a>"        
     else:
         return jsonify({'message': 'Either event_id or user_car_association_id must be provided'}), 400
 
@@ -696,7 +699,7 @@ def add_comment():
     #get email of user who created the event
     user = User.query.get(notification_user_id)
     #send notification email
-    send_notification_email(user.email, "New comment on CarsOfMy.Life ", notification_message)
+    send_notification_email(user.email, "New comment on CarsOfMy.Life ", notification_message, notification_user_id)
 
     return jsonify({'message': 'Comment added successfully', 'comment_id': comment.id}), 201
 
