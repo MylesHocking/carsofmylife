@@ -544,7 +544,7 @@ from flask import g  # Import global context object, typically used for request-
 def get_users():
     try:
         current_user_id = request.args.get('userId')
-        users = User.query.filter(User.sharing_preference == SharingPreferenceEnum.Global).all()
+        users = User.query.filter(User.sharing_preference == SharingPreferenceEnum.Global).order_by(User.id.desc()).all()
 
         user_list = []
         for user in users:
