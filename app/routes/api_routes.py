@@ -672,21 +672,29 @@ def add_comment():
     #get the user who created the comment
     commenting_user = User.query.get(user_id)
     print(f"Commenting user: {commenting_user}")
-    link_to_commenters_chart = f"{ALLOWED_ORIGINS}/chart/{user_id}"
-    link_to_chart = f"{ALLOWED_ORIGINS}/chart/"
     notification_message = ""
     if event:      
         notification_user_id = event.user_id 
-        link_to_chart = link_to_chart + str(notification_user_id)
-        notification_message = f"New comment on your <a href='{link_to_chart}'>{event.event_type}</a> by <a href='{link_to_commenters_chart}'>{commenting_user.firstname} {commenting_user.lastname}</a>"
+        link_to_chart = f"{ALLOWED_ORIGINS}/chart/{notification_user_id}"
+        link_to_commenters_chart = f"{ALLOWED_ORIGINS}/chart/{commenting_user.id}"
+        notification_message = f"""
+            <p>Brooom Brooom!</p>
+            <p>Hi there's a new comment on your <a href='{link_to_chart}'>{event.event_type}</a> by <a href='{link_to_commenters_chart}'>{commenting_user.firstname}</a>.</p>
+            <p>Cheers,<br>CarsOfMyLife</p>
+        """
     elif uca_id and car_info:
         notification_user_id = user_id_of_car
-        link_to_chart = link_to_chart + str(notification_user_id)
-        notification_message = f"New comment on your <a href='{link_to_chart}'>{car_info}</a> by <a href='{link_to_commenters_chart}'>{commenting_user.firstname} {commenting_user.lastname}</a>"        
+        link_to_chart = f"{ALLOWED_ORIGINS}/chart/{notification_user_id}"
+        link_to_commenters_chart = f"{ALLOWED_ORIGINS}/chart/{commenting_user.id}"
+        notification_message = f"""
+            <p>Neeeoooowww!</p>
+            <p>Hi there's a new comment on your <a href='{link_to_chart}'>{car_info}</a> by <a href='{link_to_commenters_chart}'>{commenting_user.firstname}</a>.</p>
+            <p>Cheers,<br>CarsOfMyLife</p>
+        """        
     else:
         return jsonify({'message': 'Either event_id or user_car_association_id must be provided'}), 400
 
-
+    #
     # Create a new notification for the user of the event or car
     notification = Notification(
         user_id=notification_user_id,
