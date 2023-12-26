@@ -48,7 +48,7 @@ def send_notification_email(recipient, subject, text, user_id):
         <div class="App">
             <div class="main-container">
                 <header>
-                    <a href="https://carsofmy.life/chart/">
+                    <a href="https://carsofmy.life/">
                         <img src="https://carsofmy.life/static/media/transparent_logo.cc9d07b48032a71a20a6.png" alt="Cars of My Life Logo" style="height: 116px; margin: auto;" />
                     </a>
                 </header>

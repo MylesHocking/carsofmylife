@@ -32,7 +32,7 @@ def add_car_to_db(model_id, rating, memories, user_id, year_purchased, custom_ma
     # Return the ID of the newly created association
     return new_association.id
 
-def update_car_in_db(car_id, memories, has_custom_image=None):
+def update_car_in_db(car_id, memories, rating, year_purchased, has_custom_image=None):
     # Find the existing car entry by ID
     car_to_edit = UserCarAssociation.query.get(car_id)
 
@@ -42,6 +42,8 @@ def update_car_in_db(car_id, memories, has_custom_image=None):
 
     # Update the fields
     car_to_edit.memories = memories
+    car_to_edit.rating = rating
+    car_to_edit.year_purchased = year_purchased
     if has_custom_image is not None:
         car_to_edit.has_custom_image = has_custom_image
 

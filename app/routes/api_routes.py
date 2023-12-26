@@ -3,18 +3,16 @@ from app import db
 from app.models import Car, UserCarAssociation, CarImage, User, Event, Comment, UserFriends, Notification
 from app.models.user import SharingPreferenceEnum
 from app.utils.email_utils import send_simple_message, send_html_message
+from app.utils.wiki_utils import fetch_wikimedia_images
 from app.utils.notification_utils import send_notification_email
+from app.utils.image_utils import create_thumbnail
+from app.utils.gcp_utils import storage_client
 from app.config import MAILGUN_DOMAIN, MAILGUN_API_KEY, UPLOAD_FOLDER, LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET, LINKEDIN_REDIRECT_URI, ALLOWED_ORIGINS
 import db_ops
 from google.cloud import storage
 import datetime 
 import requests
-#import json
-#import os
-#from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash, generate_password_hash
-from app.utils.image_utils import create_thumbnail
-from app.utils.gcp_utils import storage_client
 
 api = Blueprint('api', __name__)
 
@@ -143,6 +141,8 @@ def edit_car(car_id):
     data = request.form
     file = request.files.get('file', None)
     memories = data['memories']
+    rating = int(data.get('rating'))
+    year_purchased = data.get('year_purchased')
 
     # Check if an image was uploaded
     if file and file.filename.split('.')[-1] in ALLOWED_EXTENSIONS:
@@ -150,6 +150,8 @@ def edit_car(car_id):
         db_ops.update_car_in_db(
             car_id=car_id,
             memories=memories,
+            rating=rating,
+            year_purchased=year_purchased,
             has_custom_image=has_custom_image
         )
         # Add code to handle the new image upload
@@ -157,7 +159,9 @@ def edit_car(car_id):
     else:
         db_ops.update_car_in_db(
             car_id=car_id,
-            memories=memories
+            memories=memories,
+            rating=rating,
+            year_purchased=year_purchased
             # Note: Not passing has_custom_image
         )
 
@@ -502,16 +506,37 @@ def linkedin_signup(user_data):
     user_info = new_user.to_dict()
     return user_info
 
+@api.route('/facebook-signup', methods=['POST'])
+def facebook_signup():
+    user_data = request.json
+    access_token = user_data['accessToken']  # Token received from the frontend
+
+    # Verify the token with Facebook
+    app_id = "160187100512891"
+    app_secret = "5c3f0a2a6167139ae82925cc4d6c7889"  # Keep this secret
+    verification_url = f"https://graph.facebook.com/debug_token?input_token={access_token}&access_token={app_id}|{app_secret}"
+    verification_response = requests.get(verification_url)
+    verification_data = verification_response.json()
+
+    if not verification_data.get('data', {}).get('is_valid', False):
+        return jsonify({'error': 'Invalid Facebook token'}), 401
+
+    # ... [rest of your user handling logic] ...
+
+    return jsonify({'success': True}), 200
+
+
 @api.route('/login', methods=['POST'])
 def login():
     data = request.json
-    email = data.get('email')
-    password = data.get('password')
+    email = data.get('email').strip()
+    password = data.get('password').strip()
     #debug
     print('email is:' + email)
     print('password is:' + password)
+    print(f"Email received: [{email}]")
     
-    user = User.query.filter_by(email=email).first()
+    user = User.query.filter(User.email.ilike(email)).first()
     #debug
     print('user is:' + str(user))
     user_info = user.to_dict()
@@ -638,8 +663,13 @@ def add_comment():
     user_id = request.json.get('user_id')
     event_id = request.json.get('event_id', None)
     uca_id = request.json.get('user_car_association_id', None)  # UserCarAssociation ID
+    car_chart_user_id = request.json.get('car_chart_user_id', None)  # User ID of the car chart owner
     text = request.json.get('text')
     parent_comment_id = request.json.get('parent_comment_id', None)
+    print(f"Received comment: {text}")
+    print(f"Event ID: {event_id}")
+    print(f"User Car Association ID: {uca_id}")
+    print(f"Car Chart User ID: {car_chart_user_id}")
 
     if not text:
         return jsonify({'message': 'Comment text is required'}), 400
@@ -663,10 +693,12 @@ def add_comment():
         user_id=user_id, 
         event_id=event_id,
         user_car_association_id=uca_id,
+        car_chart_user_id=car_chart_user_id,
         text=text,
         parent_comment_id=parent_comment_id
     )
-
+    #print all comment object out:
+    print(f"Comment: {comment}")
     db.session.add(comment)
     
     #get the user who created the comment
@@ -691,6 +723,13 @@ def add_comment():
             <p>Hi there's a new comment on your <a href='{link_to_chart}'>{car_info}</a> by <a href='{link_to_commenters_chart}'>{commenting_user.firstname}</a>.</p>
             <p>Cheers,<br>CarsOfMyLife</p>
         """        
+    elif car_chart_user_id:
+        notification_user_id = car_chart_user_id
+        link_to_chart = f"{ALLOWED_ORIGINS}/chart/{notification_user_id}"
+        notification_message = f"""
+            <p>Ooooo!</p><p> New comment on your car chart by {commenting_user.firstname}.</p>
+            <p><a href='{link_to_chart}'>View Comment</a></p>
+        """
     else:
         return jsonify({'message': 'Either event_id or user_car_association_id must be provided'}), 400
 
@@ -715,13 +754,16 @@ def add_comment():
 def get_comments():
     event_id = request.args.get('event_id', None)
     uca_id = request.args.get('user_car_association_id', None)
+    car_chart_user_id = request.args.get('car_chart_user_id', None)
 
     query = Comment.query
     if event_id:
         query = query.filter_by(event_id=event_id)
-    if uca_id:
+    elif uca_id:
         query = query.filter_by(user_car_association_id=uca_id)
-
+    elif car_chart_user_id:
+        query = query.filter_by(car_chart_user_id=car_chart_user_id)
+        
     comments = query.order_by(Comment.timestamp.asc()).all()
 
     comments = query.join(User).add_columns(
@@ -782,3 +824,78 @@ def update_user_profile(user_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
+
+def delete_custom_car_images(user_id):
+    print(f"Deleting custom car images for user {user_id}")
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(GCP_BUCKET_NAME)
+
+    # Retrieve all custom car associations for the user
+    custom_car_associations = UserCarAssociation.query.filter_by(user_id=user_id, has_custom_image=True).all()
+
+    for association in custom_car_associations:
+        print(f"Deleting custom car images for association {association.id}")
+        car_id = association.car_id
+        folder_path = f"{UPLOAD_FOLDER}/{car_id}/"
+        thumbnail_folder_path = f"{UPLOAD_FOLDER}/{car_id}/thumb/"
+
+        # Delete main image
+        main_blobs = storage_client.list_blobs(bucket, prefix=folder_path)
+        for blob in main_blobs:
+            blob.delete()
+            print(f"Deleted custom car image {blob.name} from GCP bucket.")
+
+        # Delete thumbnail image
+        thumb_blobs = storage_client.list_blobs(bucket, prefix=thumbnail_folder_path)
+        for blob in thumb_blobs:
+            blob.delete()
+            print(f"Deleted custom car thumbnail {blob.name} from GCP bucket.")
+
+
+@api.route('/delete_user/<int:user_id>', methods=['DELETE'])
+def delete_user(user_id):
+    # Assuming you have a User model and a db session
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'message': 'User not found'}), 404
+
+    try:
+        # Anonymize the user's comments
+        Comment.query.filter_by(user_id=user_id).update({'user_id': None, 'text': 'Content removed'})
+        print(f"Comments anonymized for user {user_id}")
+        events = Event.query.filter_by(user_id=user_id).all()
+        for event in events:
+            # Here you can also handle related comments if needed
+            Comment.query.filter_by(event_id=event.event_id).delete()
+            db.session.delete(event)
+            print(f"Event {event.event_id} deleted for user {user_id}")
+        
+        delete_custom_car_images(user_id)
+        print(f"Custom car images deleted for user {user_id}")
+        # Delete comments associated with the user's cars
+        Comment.query.filter(Comment.user_car_association_id.in_(
+            UserCarAssociation.query.filter_by(user_id=user_id).with_entities(UserCarAssociation.id)
+        )).delete(synchronize_session=False)
+        UserCarAssociation.query.filter_by(user_id=user_id).delete() 
+        print(f"User car associations deleted for user {user_id}")
+        Notification.query.filter_by(user_id=user_id).delete()
+        print(f"Notifications deleted for user {user_id}")
+        # If cascading deletes are set up, this may be enough
+        db.session.delete(user)
+
+        db.session.commit()
+        return jsonify({'message': 'User deleted successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': 'Error deleting user', 'error': str(e)}), 500
+
+@api.route('/wikimedia_images', methods=['GET'])
+def wikimedia_images():
+    # Extract query from request args
+    query = request.args.get('query', 'honda accord')
+
+    # Fetch images from Wikimedia
+    images = fetch_wikimedia_images(query)
+
+    # Process and return the data (for simplicity, returning raw JSON)
+    return jsonify(images)

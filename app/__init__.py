@@ -4,7 +4,6 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from .config import ALLOWED_ORIGINS, FLASK_SECRET_KEY
 from flask_migrate import Migrate
-#from app.utils.oauth import linkedin_blueprint
 # Initialize SQLAlchemy with no settings
 db = SQLAlchemy()
 

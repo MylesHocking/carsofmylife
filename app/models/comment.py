@@ -11,6 +11,7 @@ class Comment(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     event_id = db.Column(db.Integer, db.ForeignKey('events.event_id'), nullable=True)
     user_car_association_id = db.Column(db.Integer, db.ForeignKey('user_car_association.id'), nullable=True)
+    car_chart_user_id = db.Column(db.Integer, nullable=True) 
     parent_comment_id = db.Column(db.Integer, db.ForeignKey('comments.id'), nullable=True)
     
     # Relationships
