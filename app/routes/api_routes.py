@@ -80,6 +80,10 @@ def add_car():
     custom_make = data.get('custom_make', None)
     custom_model = data.get('custom_model', None)
     custom_variant = data.get('custom_variant', None)
+    wiki_image_url = data.get('wiki_image_url', None)
+    wiki_image_attribution = request.form.get('wiki_image_attribution', None)
+    wiki_image_thumbnail_url = request.form.get('wiki_image_thumbnail_url', None)
+
 
     if 'model_id' in data and data['model_id']:
         model_id = int(data.get('model_id'))
@@ -111,6 +115,17 @@ def add_car():
             # Add additional info if needed
         )
         db.session.add(first_car_event)
+        db.session.commit()
+
+    # If a Wikimedia image URL is provided, create a new CarImage record
+    if wiki_image_url:
+        new_car_image = CarImage(
+            association_id=new_car_id,
+            image_url=wiki_image_url,
+            attribution=wiki_image_attribution,
+            thumbnail_url=wiki_image_thumbnail_url
+        )
+        db.session.add(new_car_image)
         db.session.commit()
 
     # Check if a custom image has been uploaded
@@ -171,10 +186,17 @@ def edit_car(car_id):
 @api.route('/delete_car/<int:car_id>', methods=['DELETE'])
 def delete_car(car_id):
     print(f"Deleting car with ID: {car_id}")
+
+    # First, delete associated CarImage records
+    CarImage.query.filter_by(association_id=car_id).delete()
+
+    # Then, delete the UserCarAssociation record
     success = db_ops.delete_car_from_db(car_id)
     if success:
+        db.session.commit()  # Commit the changes to the database
         return jsonify({"message": "Car deleted successfully"}), 200
     else:
+        db.session.rollback()  # Roll back in case of error
         return jsonify({"error": "Car not found"}), 404
 
 
@@ -199,7 +221,9 @@ def get_user_cars(user_id):
             'year_purchased': car.UserCarAssociation.year_purchased,
             'image_url': car.CarImage.image_url if car.CarImage else None,
             'has_custom_image': car.UserCarAssociation.has_custom_image,
-            'user_car_association_id': car.UserCarAssociation.id
+            'user_car_association_id': car.UserCarAssociation.id,
+            'has_wiki_image': bool(car.CarImage and car.CarImage.image_url.startswith("https://upload.wikimedia.org/wikipedia/commons/")),
+            'wiki_thumbnail_url': car.CarImage.thumbnail_url if car.CarImage and car.CarImage.image_url.startswith("https://upload.wikimedia.org/wikipedia/commons/") else None       
         } for car in user_cars
     ]
     return jsonify(cars_data)

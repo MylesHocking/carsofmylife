@@ -6,6 +6,8 @@ class CarImage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     association_id = db.Column(db.Integer, db.ForeignKey('user_car_association.id'), nullable=False)
     image_url = db.Column(db.Text, nullable=True)
+    attribution = db.Column(db.String, nullable=True)  
+    thumbnail_url = db.Column(db.String, nullable=True)  
 
     # Add a backref to establish a bi-directional relationship if needed
     association = db.relationship("UserCarAssociation", back_populates="images")
