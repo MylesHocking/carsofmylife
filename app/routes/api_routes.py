@@ -626,7 +626,7 @@ def send_bulk_email():
         subject = "We Need Your Input: The Future of [Website Name]"
 
         # Prepare the HTML content
-        html_content = """
+        html_content = f"""
         <!DOCTYPE html>
         <html>
         <head>
