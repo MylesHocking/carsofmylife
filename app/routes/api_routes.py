@@ -671,14 +671,14 @@ def send_bulk_email():
                     </header>
                     <div class="email-content">
                         <p>Hello,</p>
-                        <p>As someone who has been a part of our CarsOfMy.Life community, your input is invaluable to me. I'm at a crossroads regarding the future of our platform and are considering shutting it down due to [reasons, e.g., financial constraints, development challenges, etc.].</p>
+                        <p>As someone who has been a part of our CarsOfMy.Life community, your input is invaluable to me. I'm at a crossroads regarding the future of our platform and are considering shutting it down due to reasons, e.g., lack of interest, petty financial constraints.</p>
                         <p>Before making any final decisions, I want to hear from you:</p>
                         <ul>
                             <li>Do you believe the website should continue to operate?</li>
                             <li>Would you or someone you know be interested in supporting the website through hosting costs or further development?</li>
                         </ul>
                         <p>Please reply to myleshocking@gmail.com with your thoughts, or if you're willing to support, let me know how you'd like to contribute.</p>
-                        <p>I'm exploring all options and truly appreciate your time and support throughout this journey.</p>
+                        <p>I'm exploring all options and truly appreciate your time and support throughout this journey.</p>                        
                         <p>Warm regards,</p>
                         <p>Myles Hocking</p>
                         <p>CarsOfMy.Life</p>
@@ -696,9 +696,9 @@ def send_bulk_email():
         text="Hello, As someone who has been a part of our CarsOfMy.Life community, your input is invaluable to me. I'm at a crossroads regarding the future of our platform and are considering shutting it down due to [reasons, e.g., financial constraints, development challenges, etc.]. Before making any final decisions, I want to hear from you: Do you believe the website should continue to operate? Would you or someone you know be interested in supporting the website through hosting costs or further development? Please reply to myleshocking@gmail.com"
 
         # Fetch users who opted in for email notifications
-        #users = User.query.filter_by(email_notifications=True).all()
+        users = User.query.filter_by(email_notifications=True).all()
         # Fetch only your user record for testing
-        users = User.query.filter_by(email='myleshocking@gmail.com').all()
+        #users = User.query.filter_by(email='myleshocking@gmail.com').all()
 
         for user in users:
             # Assume send_html_message is similar to send_simple_message but for HTML content
