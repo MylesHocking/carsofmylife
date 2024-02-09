@@ -693,6 +693,7 @@ def send_bulk_email():
         </body>
         </html>
         """
+        text="Hello, As someone who has been a part of our CarsOfMy.Life community, your input is invaluable to me. I'm at a crossroads regarding the future of our platform and are considering shutting it down due to [reasons, e.g., financial constraints, development challenges, etc.]. Before making any final decisions, I want to hear from you: Do you believe the website should continue to operate? Would you or someone you know be interested in supporting the website through hosting costs or further development? Please reply to myleshocking@gmail.com"
 
         # Fetch users who opted in for email notifications
         #users = User.query.filter_by(email_notifications=True).all()
@@ -706,6 +707,7 @@ def send_bulk_email():
                 MAILGUN_API_KEY,
                 user.email,
                 subject,
+                text,  # Text version of the email
                 html_content  # Ensure this is passed correctly in your send_html_message function
             )
             if response.status_code != 200:
