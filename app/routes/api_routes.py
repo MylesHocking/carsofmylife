@@ -619,6 +619,8 @@ def get_users():
 
 @api.route('/send_bulk_email', methods=['POST'])
 def send_bulk_email():
+    #debug
+    print('send_bulk_email triggered')
     try:
         # Define your subject and HTML content here
         subject = "We Need Your Input: The Future of [Website Name]"
