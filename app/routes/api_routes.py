@@ -686,7 +686,7 @@ def send_bulk_email():
                     <footer style="text-align: center; padding: 20px; font-size: 12px;">
                         <p>© 2024 Cars of My Life. All rights reserved.</p>
                         <p>Contact us at: <a href="mailto:support@carsofmylife.com">support@carsofmylife.com</a></p>
-                        <p><a href="https://www.carsofmy.life/user/{user_id}">Unsubscribe to Email Notifications</a></p>
+                        
                     </footer>
                 </div>
             </div>
