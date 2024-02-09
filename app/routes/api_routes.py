@@ -617,6 +617,105 @@ def get_users():
         return jsonify({'error': str(e)}), 500
 
 
+@api.route('/send_bulk_email', methods=['POST'])
+def send_bulk_email():
+    try:
+        # Define your subject and HTML content here
+        subject = "We Need Your Input: The Future of [Website Name]"
+
+        # Prepare the HTML content
+        html_content = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                .email-content {{
+                    font-family: sans-serif;
+                    font-size: 16px;
+                    line-height: 1.5;
+                }}
+                body {{
+                    font-family: 'Arial Black', sans-serif;
+                    color: #000;
+                    margin: 0;
+                    -webkit-font-smoothing: antialiased;
+                }}
+                header {{
+                    background: linear-gradient( #dc534b, #a50308);
+                    text-align: center; /* Center content in the header */
+                    padding: 10px 0; /* Add some padding */
+                }}
+                footer {{
+                    background: linear-gradient( #ae0507, #e55c54);
+                    width: 100%;
+                    padding-bottom: 40px;
+                    padding-top: 40px;
+                    margin-top: 20px;
+                }}
+                .footer a {{
+                    margin-left: 40px;
+                    color: black;
+                    text-decoration: none;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="App">
+                <div class="main-container">
+                    <header>
+                        <a href="https://carsofmy.life/">
+                            <img src="https://carsofmy.life/static/media/transparent_logo.cc9d07b48032a71a20a6.png" alt="Cars of My Life Logo" style="height: 116px; margin: auto;" />
+                        </a>
+                    </header>
+                    <div class="email-content">
+                        <p>Hello,</p>
+                        <p>As someone who has been a part of our CarsOfMy.Life community, your input is invaluable to me. I'm at a crossroads regarding the future of our platform and are considering shutting it down due to [reasons, e.g., financial constraints, development challenges, etc.].</p>
+                        <p>Before making any final decisions, I want to hear from you:</p>
+                        <ul>
+                            <li>Do you believe the website should continue to operate?</li>
+                            <li>Would you or someone you know be interested in supporting the website through hosting costs or further development?</li>
+                        </ul>
+                        <p>Please reply to myleshocking@gmail.com with your thoughts, or if you're willing to support, let me know how you'd like to contribute.</p>
+                        <p>I'm exploring all options and truly appreciate your time and support throughout this journey.</p>
+                        <p>Warm regards,</p>
+                        <p>Myles Hocking</p>
+                        <p>CarsOfMy.Life</p>
+                    </div>
+                    <footer style="text-align: center; padding: 20px; font-size: 12px;">
+                        <p>© 2024 Cars of My Life. All rights reserved.</p>
+                        <p>Contact us at: <a href="mailto:support@carsofmylife.com">support@carsofmylife.com</a></p>
+                        <p><a href="https://www.carsofmy.life/user/{user_id}">Unsubscribe to Email Notifications</a></p>
+                    </footer>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        # Fetch users who opted in for email notifications
+        #users = User.query.filter_by(email_notifications=True).all()
+        # Fetch only your user record for testing
+        users = User.query.filter_by(email='myleshocking@gmail.com').all()
+
+        for user in users:
+            # Assume send_html_message is similar to send_simple_message but for HTML content
+            response = send_html_message(
+                MAILGUN_DOMAIN,
+                MAILGUN_API_KEY,
+                user.email,
+                subject,
+                html_content  # Ensure this is passed correctly in your send_html_message function
+            )
+            if response.status_code != 200:
+                # Log or handle partial failure
+                print(f"Failed to send email to {user.email}")
+
+        # Return a success response
+        return jsonify({"message": "Bulk emails sent successfully!"}), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @api.route('/events', methods=['GET'])
 def get_events():
     page = request.args.get('page', 1, type=int)

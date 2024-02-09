@@ -24,4 +24,7 @@ INSERT INTO car_data (model_id, model_make_id, model_name) VALUES (1, 'Custom', 
 heroku run flask db upgrade --app carsofmylife
 
 CYPRESS TESTS
-C:\Users\myles\OneDrive\Documents\GitHub\COML-react> npx cypress run
+cd C:\Users\myles\OneDrive\Documents\GitHub\COML-react 
+npx cypress open
+or headless:
+npx cypress run
