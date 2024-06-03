@@ -12,6 +12,8 @@ import db_ops
 from google.cloud import storage
 import datetime 
 import requests
+import string
+import random
 from werkzeug.security import check_password_hash, generate_password_hash
 
 api = Blueprint('api', __name__)
@@ -569,6 +571,18 @@ def login():
         return jsonify({"message": "Login successful", "user_info": user_info}), 200
     else:
         return jsonify({"message": "Invalid credentials"}), 401
+
+def generate_random_username(length=3):
+    return 'AnonUser' + ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+
+@api.route('/anonymous_login', methods=['POST'])
+def anonymous_login():
+    temp_username = generate_random_username()
+    anonymous_user = User(is_anonymous=True, username=temp_username, firstname=temp_username, lastname=temp_username)
+    db.session.add(anonymous_user)
+    db.session.commit()
+    return jsonify({"user_info": anonymous_user.to_dict()}), 201
+
 
 @api.route('/share_chart', methods=['POST'])
 def share_chart():
